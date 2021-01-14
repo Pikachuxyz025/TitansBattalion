@@ -1,0 +1,139 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &619037995678155527
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 619037995678155521}
+  - component: {fileID: 3442509769850622842}
+  - component: {fileID: 7562645855468938581}
+  - component: {fileID: 7939181217625673487}
+  - component: {fileID: 1792409360749717995}
+  - component: {fileID: 690267897555500634}
+  m_Layer: 0
+  m_Name: MirrorGameManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &619037995678155521
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 619037995678155527}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 14.5, y: -16.5, z: 53.5}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 0
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &3442509769850622842
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 619037995678155527}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8f3c7f8759ecd614b895f11b99e4de71, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  allArmyTypes:
+  - ArmyName: BasicArmy
+    gridMat: {fileID: 2100000, guid: ea86dd3a6fd7e3a438c92450cde21eab, type: 2}
+    ArmyGrid: {fileID: 3140179744001543143, guid: 591aaebe24e6e1342ba5c27e91f7e6b8,
+      type: 3}
+    ArmyOffset: 3
+    PiecesPrefabs: []
+  allBoardTypes:
+  - FieldName: 4x10Field
+    FieldGrid: {fileID: 4239210235706259426, guid: 987ded0de5874e34dbc5b0c2c1b3d514,
+      type: 3}
+--- !u!114 &7562645855468938581
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 619037995678155527}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dcbd0dd6864967c48b7556777032f55d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  highlightPrefab: {fileID: 3160463778558153922, guid: 70e96e618ff762440a08135ebee8e82f,
+    type: 3}
+  highlights: []
+--- !u!114 &7939181217625673487
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 619037995678155527}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7ebbb123157f3e347867735afa1b466b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  syncMode: 0
+  syncInterval: 0.1
+  SID_BM: {fileID: 690267897555500634}
+  army: {fileID: 3442509769850622842}
+  joy: {fileID: 0}
+  playerInfo: {fileID: 0}
+--- !u!114 &1792409360749717995
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 619037995678155527}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9b91ecbcc199f4492b9a91e820070131, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  sceneId: 0
+  serverOnly: 0
+  m_AssetId: 
+  hasSpawned: 0
+--- !u!114 &690267897555500634
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 619037995678155527}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b2883d86e7f0fe7469fcd0bb0c0eb069, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  syncMode: 0
+  syncInterval: 0.1
+  buildModeOn: 0
+  setActive: 0
+  isWhiteTurn: 1
+  testing: 60
+  selectedChessman: {fileID: 0}
+  p1chessmanPrefabs: []
+  p2chessmanPrefabs: []
+  activeChessman: []
+  onBoard: 0
+  isWhite: 0
+  originBoardPiece:
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  yo: {fileID: 0}
+  yoTwo: {fileID: 0}

@@ -1,0 +1,157 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &5368427399489409759
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5368427399489409733}
+  - component: {fileID: 5368427399489409732}
+  - component: {fileID: 5368427399489409755}
+  - component: {fileID: 5368427399489409754}
+  - component: {fileID: 5368427399489409753}
+  - component: {fileID: 6583868475473033406}
+  m_Layer: 0
+  m_Name: GameManager_Mirror
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &5368427399489409733
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5368427399489409759}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 1.9740136, y: -12.551033, z: 6.3504195}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 0
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &5368427399489409732
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5368427399489409759}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9b91ecbcc199f4492b9a91e820070131, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  sceneId: 0
+  serverOnly: 0
+  m_AssetId: 
+  hasSpawned: 0
+--- !u!114 &5368427399489409755
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5368427399489409759}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7ebbb123157f3e347867735afa1b466b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  syncMode: 0
+  syncInterval: 0.1
+  SID_BM: {fileID: 5368427399489409754}
+  army: {fileID: 5368427399489409753}
+  neutralCoordination: {x: 0, y: 0, z: 0, w: 1}
+  coordination: {x: 0, y: 1, z: 0, w: -0.00000004371139}
+  armyIsSet: 0
+  varin: {fileID: 0}
+  BoLo: {fileID: 0}
+  buildPos:
+  - {x: 0, y: 0, z: 0}
+  - {x: 0, y: 0, z: 0}
+  - {x: 0, y: 0, z: 0}
+  - {x: 0, y: 0, z: 0}
+  playerInfos:
+  - {fileID: 0}
+  - {fileID: 0}
+  SetupActive: 1
+--- !u!114 &5368427399489409754
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5368427399489409759}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b2883d86e7f0fe7469fcd0bb0c0eb069, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  syncMode: 0
+  syncInterval: 0.1
+  buildModeOn: 0
+  setActive: 0
+  isWhiteTurn: 1
+  selectedChessman: {fileID: 0}
+  p1chessmanPrefabs: []
+  p2chessmanPrefabs: []
+  activeChessman: []
+  setpos: []
+  playerOneArmy: 0
+  playerTwoArmy: 0
+  onBoard: 0
+  originBoardPiece:
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+--- !u!114 &5368427399489409753
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5368427399489409759}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8f3c7f8759ecd614b895f11b99e4de71, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  allArmyTypes:
+  - ArmyName: Basic
+    gridMat: {fileID: 2100000, guid: ea86dd3a6fd7e3a438c92450cde21eab, type: 2}
+    ArmyGrid: {fileID: 3140179744001543143, guid: 591aaebe24e6e1342ba5c27e91f7e6b8,
+      type: 3}
+    ArmyOffset: 3
+    PiecesPrefabs:
+    - {fileID: 640629375439368150, guid: 0d545b7d412bb06438a6a2ad23655685, type: 3}
+    - {fileID: 2408183502839012581, guid: cc559dcfc6069154f98ae66987b92eea, type: 3}
+    - {fileID: 9061963134462711203, guid: 7fdb46e7c035b784ca0cd37a8fdd1425, type: 3}
+    - {fileID: 9061963134462711203, guid: a88f1b29308320b418f2fba64e307891, type: 3}
+    - {fileID: 3739594003427660230, guid: 108fea3893a436d48b7dd0a15b0230b8, type: 3}
+    - {fileID: 1969503369970440120, guid: 260a05ad22de7f0439fd2e6c02e1dc0f, type: 3}
+  allBoardTypes:
+  - FieldName: Basic
+    FieldGrid: {fileID: 4239210235706259426, guid: 987ded0de5874e34dbc5b0c2c1b3d514,
+      type: 3}
+--- !u!114 &6583868475473033406
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5368427399489409759}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6eb195ceb92f3ef49bc8447894d04a90, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  Sid: {fileID: 5368427399489409754}
+  highlightPrefab: {fileID: 3160463778558153922, guid: 70e96e618ff762440a08135ebee8e82f,
+    type: 3}
+  highlights: []
