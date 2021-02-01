@@ -9,38 +9,35 @@ public class SID_BoardGridSet : NetworkBehaviour
     RaycastHit hit;
     public float grdSiz;
     public int GridX = -1, GridY = -1;
-    public bool isFirstPiece, startingPieceone, startingPiecetwo, isMainBoard,pieceOn;
-    public bool Down, Left, Right, Up;
-    //[HideInInspector]
-    public bool connected;
-    SID_BoardGridSet GBSone,GBStwo,GBSthree,GBSfour;
+    public bool isFirstPiece, startingPieceone, startingPiecetwo, isMainBoard, pieceOn;
+    [HideInInspector] public bool Down, Left, Right, Up;
+    [HideInInspector] public bool connected;
+    SID_BoardGridSet GBSone, GBStwo, GBSthree, GBSfour;
     public SID_Chessman chess;
     public SID_Chessman_Mirror chessM;
+    public GameObject chesspiece;
+
+    enum PieceState { Empty, Full }
     private void Awake()
     {
         GridX = -1;
         GridY = -1;
     }
-    // Start is called before the first frame update
-    void Start()
-    {
-        
-    }
 
     // Update is called once per frame
     void Update()
     {
-  
         ConfigureGrid();
-        FindMainBoard(Vector3.back/*-transform.forward*/, ref Down, ref GBSone);
-        FindMainBoard(Vector3.forward/*transform.forward*/, ref Up, ref GBStwo);
-        FindMainBoard(Vector3.left/*-transform.right*/, ref Left, ref GBSthree);
-        FindMainBoard(Vector3.right/*transform.right*/, ref Right, ref GBSfour);
+        FindMainBoard(Vector3.back, ref Down, ref GBSone);
+        FindMainBoard(Vector3.forward, ref Up, ref GBStwo);
+        FindMainBoard(Vector3.left, ref Left, ref GBSthree);
+        FindMainBoard(Vector3.right, ref Right, ref GBSfour);
         if (Physics.Raycast(this.transform.position + (new Vector3(.5f, .5f, -.5f)), transform.up, out hit, grdSiz, LayerMask.GetMask("Pieces")))
         {
             pieceOn = true;
             chess = hit.collider.GetComponent<SID_Chessman>();
             chessM = hit.collider.GetComponent<SID_Chessman_Mirror>();
+            chesspiece = hit.collider.gameObject;
         }
         else
         {
@@ -50,12 +47,12 @@ public class SID_BoardGridSet : NetworkBehaviour
         {
             chess = null;
             chessM = null;
+            chesspiece = null;
         }
     }
     //uses raycast to locate fellow blocks
     void FindMainBoard(Vector3 dir, ref bool avail, ref SID_BoardGridSet GBS)
     {
-
         if (Physics.Raycast(this.transform.position + (new Vector3(.5f, .5f, -.5f)), dir, out hit, grdSiz, LayerMask.GetMask("ChessPlane")))
         {
             if (hit.collider != null)

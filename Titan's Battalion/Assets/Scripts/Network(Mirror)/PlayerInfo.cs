@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using Mirror;
+using UnityEngine.Events;
 
 public class PlayerInfo : NetworkBehaviour
 {
@@ -15,13 +16,12 @@ public class PlayerInfo : NetworkBehaviour
     public int playerNum;
 
     [SyncVar]
-    public GameObject gameManager,highlightman;
+    public GameObject gameManager, highlightman;
 
     [SyncVar]
     [SerializeField] private GameObject reso;
     public MirrorGameManager mirrorGameManager;
     public SID_BoardManager_Mirror SID_BM;
-
 
     public CameraController cam;
     public BoardLocation BoLo;
@@ -32,7 +32,7 @@ public class PlayerInfo : NetworkBehaviour
     public List<GameObject> armyPieces = new List<GameObject>();
 
     [SyncVar]
-    [SerializeField] private bool armyIsSet = false, boardset = false,onBoard=false;
+    [SerializeField] private bool armyIsSet = false, boardset = false, onBoard = false;
 
     [SyncVar]
     public bool setToMatch = false, isWhite = false;
@@ -43,8 +43,9 @@ public class PlayerInfo : NetworkBehaviour
     public SID_Chessman_Mirror highlightchessman;
 
     public GameObject[] set = new GameObject[2];
-
+    [SerializeField] SID_BoardPieceManager PieceManager;
     public int show = 0;
+
     public override void OnStartAuthority()
     {
         Debug.Log("YOOOOOOOOOOOO!");
@@ -61,20 +62,27 @@ public class PlayerInfo : NetworkBehaviour
         cam.isCameraMoblie = false;
         if (playerNum == 1)
             isWhite = true;
+
         else if (playerNum == 2)
             isWhite = false;
     }
+
 
     [ClientCallback]
     private void Update()
     {
         if (!hasAuthority) { return; }
+
+        if (gameManager != null && gameManager.GetComponent<NetworkIdentity>().hasAuthority)
+            Debug.Log("Set and ready");
+        else
+            Debug.Log("Authority lost");
         if (reso != null && show < 1)
         {
             CmdSet();
             CmdStart();
         }
-
+        ChangeAuthority();
         if (Input.GetKeyDown(KeyCode.E) && BoLo != null && !boardset)
         {
             if (armyBoard == null)
@@ -110,7 +118,10 @@ public class PlayerInfo : NetworkBehaviour
         }
     }
 
-    void UpdateSelectional()
+
+    #region Normal
+
+    public void UpdateSelectional()
     {
         if (playerNum == 1)
         {
@@ -144,78 +155,47 @@ public class PlayerInfo : NetworkBehaviour
 
     public void UpdateSelection()
     {
-        Debug.Log("Player " + playerNum + " is updating");
-
         RaycastHit hit;
 
-        if (Physics.Raycast(Camera.main.ScreenPointToRay(Input.mousePosition), out hit, Mathf.Infinity, LayerMask.GetMask("Pieces")))
-        {
-            Debug.Log("there are picecs here for Player " + playerNum);
-            SID_Chessman_Mirror sid = hit.collider.GetComponent<SID_Chessman_Mirror>();
-            SID_BM.selectionX = sid.CurrentX;
-            SID_BM.selectionY = sid.CurrentY;
-            SID_BM.highlightedChessman = sid;
-            highlightchessman = sid;
-            CmdHighlight(highlightchessman.gameObject);
-            onBoard = true;
-        }
-        else
-        {
+        if (isWhite != SID_BM.isWhiteTurn)
             highlightchessman = null;
-            CmdDeHiighlight();
-            onBoard = false;
-        }
-
-        if (Physics.Raycast(Camera.main.ScreenPointToRay(Input.mousePosition), out hit, Mathf.Infinity, LayerMask.GetMask("ChessPlane")))
-        {
-            SID_BoardGridSet sid = hit.collider.GetComponent<SID_BoardGridSet>();
-            SID_BM.boardselectionX = sid.GridX;
-            SID_BM.boardselectionY = sid.GridY;
-            onBoard = true;
-        }
         else
         {
-            onBoard = false;
+            if (Physics.Raycast(Camera.main.ScreenPointToRay(Input.mousePosition), out hit, Mathf.Infinity, LayerMask.GetMask("Pieces")))
+            {
+                SID_Chessman_Mirror sid = hit.collider.GetComponent<SID_Chessman_Mirror>();
+                SID_BM.selectionX = sid.CurrentX;
+                SID_BM.selectionY = sid.CurrentY;
+                SID_BM.highlightedChessman = sid;
+                highlightchessman = sid;
+                CmdHighlight(highlightchessman.gameObject);
+                onBoard = true;
+            }
+            else
+            {
+                highlightchessman = null;
+                CmdDeHighlight();
+                onBoard = false;
+            }
+
+            if (Physics.Raycast(Camera.main.ScreenPointToRay(Input.mousePosition), out hit, Mathf.Infinity, LayerMask.GetMask("ChessPlane")))
+            {
+                SID_BoardGridSet sid = hit.collider.GetComponent<SID_BoardGridSet>();
+                SID_BM.boardselectionX = sid.GridX;
+                SID_BM.boardselectionY = sid.GridY;
+                onBoard = true;
+            }
+            else
+            {
+                onBoard = false;
+            }
         }
     }
-    [Command]
-    void CmdHighlight(GameObject select)
-    {
-        Debug.Log(select);
-        highlightman = select;
-        highlightchessman = highlightman.GetComponent<SID_Chessman_Mirror>();
-    }
 
-    [Command]
-    void CmdDeHiighlight()
+    void CastlingTime()
     {
-        highlightman = null;
+        //
     }
-    [Command]
-    void CmdUpdateSelection()
-    {
-        UpdateSelection();
-    }
-    [Command]
-    void CmdCameraRay()
-    {
-        RpcCameraRay();
-    }
-    [ClientRpc]
-    void RpcCameraRay()
-    {
-        if (!Camera.main)
-        {
-            Debug.Log("Can't find camera");
-            return;
-        }
-        rai = Camera.main.ScreenPointToRay(Input.mousePosition);
-    }
-    [ClientRpc]
-    void RpcChessman() => highlightchessman = SID_BM.highlightedChessman;
-
-    [Command]
-    void CmdChessman() => highlightman = SID_BM.highlightedChessman.gameObject;//RpcChessman();
 
     public void SelectandMove()
     {
@@ -241,49 +221,79 @@ public class PlayerInfo : NetworkBehaviour
         }
     }
 
-
     public void MoveChessman(int x, int y)
     {
+        PieceState pieceStateDestination = PieceManager.VaildatePieces(x, y, SID_BM.selectedChessmanPlayer);
         if (SID_BM.allMoves[new Points(x, y)])
         {
-            for (int i = 0; i < SID_BM.gridblocksarray.Length; i++)
+            if (pieceStateDestination == PieceState.Enemy)
+                CmdSeekandDestroy(PieceManager.FindGridPiece(new Points(x, y)).chesspiece);
+            /*for (int i = 0; i < PieceManager.gridblocksarray.Length; i++)
             {
-                if (x == SID_BM.gridblocksarray[i].GridX && y == SID_BM.gridblocksarray[i].GridY)
+                if (x == PieceManager.gridblocksarray[i].GridX && y == PieceManager.gridblocksarray[i].GridY)
                 {
-                    SID_Chessman_Mirror c = SID_BM.gridblocksarray[i].chessM;
+                    SID_Chessman_Mirror c = PieceManager.gridblocksarray[i].chessM;
                     if (c != null && c.isWhite != SID_BM.isWhiteTurn)
                     {
-                        SID_BM.activeChessman.Remove(c.gameObject);
-                        Destroy(c.gameObject);
+                        //SID_BM.activeChessman.Remove(c.gameObject);
+                        //Destroy(c.gameObject);
+                        CmdSeekandDestroy(c.gameObject);
                     }
                 }
-            }
-            SID_BM.selectedChessmanPlayer.transform.position = SID_BM.GetTileCenter(x, y, 2);
-            //RpcMove(x, y);
-            SID_BoardManager_Mirror.M_eventmoment.Invoke();
+            }*/
 
-            //SID_BM.isWhiteTurn = !SID_BM.isWhiteTurn;
+            // En Passant
+            if (SID_BM.selectedChesspiece.GetComponent<SID_Pawn_Mirror>() != null)
+            {
+                SID_Pawn_Mirror pawn = SID_BM.selectedChesspiece.GetComponent<SID_Pawn_Mirror>();
+                Debug.Log(pawn.name);
+                if (y == pawn.CurrentY + 2 || y == pawn.CurrentY - 2)
+                    pawn.duoMovement = true;
+            }
+
+
+            if (SID_BM.selectedChesspiece.GetComponent<SID_Rook_Mirror>() != null)
+            {
+                SID_Rook_Mirror rook = SID_BM.selectedChesspiece.GetComponent<SID_Rook_Mirror>();
+                rook.hasMoved = true;
+            }
+
+            //Castling
+            if (SID_BM.selectedChesspiece.GetComponent<SID_King_Mirror>() != null)
+            {
+                SID_King_Mirror king = SID_BM.selectedChesspiece.GetComponent<SID_King_Mirror>();
+
+                king.Castling(x, y);
+                king.hasMoved = true;
+            }
+
+            SID_BM.selectedChessmanPlayer.transform.position = SID_BM.GetTileCenter(x, y, 2);
+
             CmdSwitch();
-            //SID_BoardHighlight_Mirror.Instance.RpcHideHighlights();
+
+            CmdReset();
+
             SID_BM.highlightOn = false;
             SID_BM.selectedChessmanPlayer = null;
         }
         else
         {
-            for (int i = 0; i < SID_BM.gridblocksarray.Length; i++)
+            for (int i = 0; i < PieceManager.gridblocksarray.Length; i++)
             {
-                if (SID_BM.gridblocksarray[i] != null)
+                if (PieceManager.gridblocksarray[i] != null)
                 {
-                    if (x == SID_BM.gridblocksarray[i].GridX && y == SID_BM.gridblocksarray[i].GridY)
+                    if (x == PieceManager.gridblocksarray[i].GridX && y == PieceManager.gridblocksarray[i].GridY)
                     {
-                        if (SID_BM.gridblocksarray[i].pieceOn && SID_BM.gridblocksarray[i].chessM.isWhite == SID_BM.isWhiteTurn)
+                        if (PieceManager.gridblocksarray[i].pieceOn && PieceManager.gridblocksarray[i].chessM.isWhite == SID_BM.isWhiteTurn)
                         {
                             //SID_BoardHighlight_Mirror.Instance.RpcHideHighlights();
-                            SID_BM.highlightOn = false;
-                            SID_BM.selectedChessmanPlayer = SID_BM.gridblocksarray[i].chessM;
+                            //SID_BM.highlightOn = false;
+                            SID_BoardHighlight_Mirror.Instance.HideHighlights();
+                            SID_BM.selectedChessmanPlayer = PieceManager.gridblocksarray[i].chessM;
                             SID_BM.allowedMoves = SID_BM.selectedChessmanPlayer.confirmation;
-                            SID_BM.highlightOn = true;
+                            //SID_BM.highlightOn = true;
                             SID_BoardHighlight_Mirror.Instance.HighLightAllowedMoves(SID_BM.allowedMoves);
+                            //                            CmdHighlighting();
                         }
                     }
                     else
@@ -298,68 +308,65 @@ public class PlayerInfo : NetworkBehaviour
         }
     }
 
-    [Command]
-    void CmdSwitch()
+    public void SelectChessman()
     {
-        SID_BM.isWhiteTurn = !SID_BM.isWhiteTurn;
-    }
-    [Command]
-    void CmdClearMoves()
-    {
-        SID_BM.ClearMoves();
-    }
-
-    void SelectChessman()
-    {
-        Debug.Log("DEATH");
+        // highlighted chessman becomes Selected Chessman Player 
         SID_BM.selectedChessmanPlayer = highlightchessman;
         SID_BM.selectedChesspiece = SID_BM.selectedChessmanPlayer.gameObject;
 
+        // options selected chessman have to offer
         SID_BM.allowedMoves = SID_BM.selectedChessmanPlayer.confirmation;
         SID_BM.highlightOn = true;
         SID_BoardHighlight_Mirror.Instance.HighLightAllowedMoves(SID_BM.allowedMoves);
+        //CmdHighlighting();
     }
 
-    [ClientRpc]
-    public void RpcSelectChessman()
+    public void ChangeAuthority()
     {
-        if (highlightchessman.isWhite != SID_BM.isWhiteTurn || !highlightchessman.hasAuthority)
+        if (gameManager != null && SID_BM != null)
         {
-            Debug.Log("not your men to choose");
-            return;
+            if (SID_BM.isWhiteTurn == isWhite && !gameManager.GetComponent<NetworkIdentity>().hasAuthority)
+            {
+                CmdChangeAuthority();
+            }
         }
-        //RpcSetnSelect();
-
-    }
-    [Command]
-    public void CSelectChessman(int x, int y)
-    {
-        //RpcSelectChessman();
-        SID_BM.selectedChessmanPlayer = highlightchessman;
-        SID_BM.selectedChesspiece = SID_BM.selectedChessmanPlayer.gameObject;
-
-        SID_BM.allowedMoves = SID_BM.selectedChessmanPlayer.confirmation;
-        SID_BM.highlightOn = true;
-        SID_BoardHighlight_Mirror.Instance.HighLightAllowedMoves(SID_BM.allowedMoves);
     }
 
+    #endregion
+
+    #region Command
 
     [Command]
-    public void CmdStarknStrike()
+    public void CmdChangeAuthority()
     {
-        SID_BM.RpcDetermineAuthority();
+
+        gameManager.GetComponent<NetworkIdentity>().RemoveClientAuthority();
+        gameManager.GetComponent<NetworkIdentity>().AssignClientAuthority(this.GetComponent<NetworkIdentity>().connectionToClient);
+        RpcSelection();
     }
-    [ClientRpc]
-    void RpcSelection()
-    {
-        SID_BM.SelectandMove();
-    }
+
     [Command]
-    public void CmdSelectnShow()
+    void CmdHighlight(GameObject select)
     {
-        //RpcSelection();
-        SID_BM.SelectandMove();
+        highlightman = select;
+        highlightchessman = highlightman.GetComponent<SID_Chessman_Mirror>();
     }
+
+    [Command]
+    void CmdDeHighlight()
+    {
+        highlightman = null;
+    }
+
+    [Command]
+    void CmdSeekandDestroy(GameObject g)
+    {
+        RpcSeekandDestroy(g);
+        NetworkServer.Destroy(g);
+    }
+
+    [Command]
+    void CmdChessman() => highlightman = SID_BM.highlightedChessman.gameObject;
 
     [Command]
     public void CmdCameraOn()
@@ -386,53 +393,25 @@ public class PlayerInfo : NetworkBehaviour
         boardset = true;
     }
 
-    [ClientRpc]
-    public void RpcBuildArmy(bool source)
+    [Command]
+    void CmdSwitch()
     {
-        if (hasAuthority)
-        {
-            if (SID_BM.buildModeOn && armyBoard != null)
-            {
-                if (playerNum == 1)
-                    SID_BM.FixedPositionOne(armyBoard, buildPos[0], buildPos[1], Vector3.left, Vector3.right, source);
-                else if (playerNum == 2)
-                    SID_BM.FixedPositionTwo(armyBoard, buildPos[3], buildPos[2], Vector3.left, Vector3.right, !source);
-            }
-        }
+        SID_BM.isWhiteTurn = !SID_BM.isWhiteTurn;
     }
 
     [Command]
-    public void CmdStart()
+    void CmdClearMoves()
     {
-        RpcSetupBoard(reso);
+        SID_BM.ClearMoves();
     }
 
     [Command]
-    public void CmdBoard(bool source)
-    {
-        RpcBuildArmy(source);
-    }
+    public void CmdStart() => RpcSetupBoard(reso);
 
-    [ClientRpc]
-    public void RpcAssertPlayerOne()
-    {
-        SID_BM.p1chessmanPrefabs = armyPieces;
-        SID_BM.playerOneArmy = ArmyId;
-    }
 
-    [ClientRpc]
-    public void RpcAssertPlayerTwo()
-    {
-        SID_BM.p2chessmanPrefabs = armyPieces;
-        SID_BM.playerTwoArmy = ArmyId;
-    }
+    [Command]
+    public void CmdBoard(bool source) => RpcBuildArmy(source);
 
-    [ClientRpc]
-    void RpcTest()
-    {
-        mirrorGameManager = gameManager.GetComponent<MirrorGameManager>();
-        SID_BM = gameManager.GetComponent<SID_BoardManager_Mirror>();
-    }
 
     [Command]
     public void CmdSet()
@@ -459,7 +438,88 @@ public class PlayerInfo : NetworkBehaviour
         }
     }
 
+    [Command]
+    public void CmdSelectArmy(int armyId, int playerid)
+    {
+        if (playerid == 1)
+        {
+            if (!armyIsSet)
+            {
+                GameObject yo = Instantiate(MirrorGameManager.curArmy[armyId - 1].armyGrid, buildPos[0], mirrorGameManager.neutralCoordination) as GameObject;
+                NetworkServer.Spawn(yo, connectionToClient);
+                RpcSetArmyBoard(yo);
+                SID_BoardGridSet[] children = yo.GetComponentsInChildren<SID_BoardGridSet>();
+                foreach (SID_BoardGridSet bgs in children)
+                {
+                    if (bgs.startingPieceone)
+                        SID_BM.originBoardPiece[0] = bgs.gameObject;
+                }
+                armyIsSet = true;
+            }
+        }
+        else if (playerid == 2)
+        {
+            if (!armyIsSet)
+            {
+                GameObject yo = Instantiate(MirrorGameManager.curArmy[armyId - 1].armyGrid, buildPos[2] + new Vector3(0, 0, MirrorGameManager.curArmy[armyId - 1].armyOffset), mirrorGameManager.neutralCoordination) as GameObject;
+                NetworkServer.Spawn(yo, connectionToClient);
+                RpcSetArmyBoard(yo);
+                SID_BoardGridSet[] children = yo.GetComponentsInChildren<SID_BoardGridSet>();
+                foreach(SID_BoardGridSet bgs in children)
+                {
+                    if (bgs.startingPiecetwo)
+                        SID_BM.originBoardPiece[1] = bgs.gameObject;
+                }
+                armyIsSet = true;
+            }
+        }
+        else
+            Debug.Log("Failure");
+    }
 
+    [Command]
+    public void CmdReset() => RpcReset();
+
+    #endregion
+
+    #region ClientRpc
+
+    [ClientRpc]
+    public void RpcSetArmyBoard(GameObject obj)
+    {
+        if (hasAuthority)
+            armyBoard = obj;
+    }
+
+    [ClientRpc]
+    void RpcSeekandDestroy(GameObject g) => SID_BM.activeChessman.Remove(g);
+
+    [ClientRpc]
+    void RpcSelection() => gameManager.GetComponent<SID_BoardHighlight_Mirror>().player = this;
+
+    [ClientRpc]
+    public void RpcBuildArmy(bool source)
+    {
+        if (hasAuthority)
+        {
+            if (SID_BM.buildModeOn && armyBoard != null)
+            {
+                if (playerNum == 1)
+                    SID_BM.FixedPositionOne(armyBoard, buildPos[0], buildPos[1], Vector3.left, Vector3.right, source);
+                else if (playerNum == 2)
+                    SID_BM.FixedPositionTwo(armyBoard, buildPos[3], buildPos[2], Vector3.left, Vector3.right, !source);
+            }
+        }
+    }
+
+    [ClientRpc]
+    void RpcTest()
+    {
+        mirrorGameManager = gameManager.GetComponent<MirrorGameManager>();
+        SID_BM = gameManager.GetComponent<SID_BoardManager_Mirror>();
+        PieceManager = SID_BoardPieceManager.instance;
+        this.gameObject.name = "Player" + " " + playerNum;
+    }
 
     [ClientRpc]
     public void RpcSetupBoard(GameObject targetGameObject)
@@ -474,72 +534,9 @@ public class PlayerInfo : NetworkBehaviour
         show++;
     }
 
-    [Command]
-    public void CmdSelectArmy(int armyId, int playerid)
-    {
-        if (playerid == 1)
-        {
-            if (!armyIsSet)
-            {
-                GameObject yo = Instantiate(MirrorGameManager.curArmy[armyId - 1].armyGrid, buildPos[0], mirrorGameManager.neutralCoordination) as GameObject;
-                NetworkServer.Spawn(yo, connectionToClient);
-                RpcSetArmyBoard(yo);
-                SID_BoardGridSet[] children = yo.GetComponentsInChildren<SID_BoardGridSet>();
-                foreach (SID_BoardGridSet item in children)
-                {
-                    if (item.startingPieceone)
-                    {
-                        SID_BM.originBoardPiece[0] = item.gameObject;
-                        armyIsSet = true;
-                        //Debug.Log(item.transform.position);
-                    }
-                }
-            }
-        }
-        else if (playerid == 2)
-        {
-            if (!armyIsSet)
-            {
-                GameObject yo = Instantiate(MirrorGameManager.curArmy[armyId - 1].armyGrid, buildPos[2] + new Vector3(0, 0, MirrorGameManager.curArmy[armyId - 1].armyOffset), mirrorGameManager.neutralCoordination) as GameObject;
-                NetworkServer.Spawn(yo, connectionToClient);
-                RpcSetArmyBoard(yo);
-                SID_BoardGridSet[] children = yo.GetComponentsInChildren<SID_BoardGridSet>();
-                foreach (SID_BoardGridSet item in children)
-                {
-                    if (item.startingPiecetwo)
-                    {
-                        SID_BM.originBoardPiece[1] = item.gameObject;
-                        armyIsSet = true;
-                        //Debug.Log(item.transform.position);
-                    }
-                }
-            }
-        }
-        else
-            Debug.Log("Failure");
-    }
-
-
-    [Command]
-    public void CmdOpinoin()
-    {
-        if (playerNum == 1)
-            SID_BM.PlayerOneIntSetMatch(this.connectionToClient);
-        else if (playerNum == 2)
-            SID_BM.PlayerTwoIntSetMatch(this.connectionToClient);
-
-        show++;
-    }
-
-    public void SetObjectPiece(int i, GameObject tho)
-    {
-
-    }
-
     [ClientRpc]
-    public void RpcSetArmyBoard(GameObject obj)
-    {
-        if (hasAuthority)
-            armyBoard = obj;
-    }
+    public void RpcReset() => SID_BoardManager_Mirror.M_eventmoment.Invoke();
+
+    #endregion
+
 }

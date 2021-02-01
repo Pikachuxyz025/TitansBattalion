@@ -8,7 +8,7 @@ using UnityEngine.Events;
 
 public class SID_BoardManager_Mirror : NetworkBehaviour
 {
-    public static SID_BoardManager_Mirror Instance { set; get; }
+    public static SID_BoardManager_Mirror Instance;
 
     [SyncVar]
     public bool buildModeOn = false, setActive = false, isWhiteTurn = true;
@@ -18,13 +18,11 @@ public class SID_BoardManager_Mirror : NetworkBehaviour
 
     private const float TileSize = 1.0f, TileOffset = 0.5f;
     [HideInInspector]
-    public int selectionX = -1, selectionY = -1, controlarmy,boardselectionX,boardselectionY;
-    public SID_BoardGridSet[] gridblocksarray;
+    public int selectionX = -1, selectionY = -1, controlarmy, boardselectionX, boardselectionY;
 
     public SID_Chessman_Mirror selectedChessmanPlayer, highlightedChessman;
 
     public List<GameObject> p1chessmanPrefabs, p2chessmanPrefabs, activeChessman;
-
 
     public List<GameObject> setpos = new List<GameObject>();
 
@@ -39,23 +37,18 @@ public class SID_BoardManager_Mirror : NetworkBehaviour
 
     public bool onBoard;
 
-    //[HideInInspector]
     public GameObject[] originBoardPiece = new GameObject[3];
-    //[HideInInspector]
-    //public GameObject yo, yoTwo;
     private Quaternion neutralCoordination = Quaternion.Euler(0, 0, 0), coordination = Quaternion.Euler(0, 180, 0);
-    public static Dictionary<SID_BoardGridSet, Points> coordinates = new Dictionary<SID_BoardGridSet, Points>();
-    public Dictionary<Points, bool> allMoves = new Dictionary<Points, bool>(new Points.EqualityComparer());
-    [HideInInspector]
-    public Dictionary<Points, bool> allowedMoves = new Dictionary<Points, bool>(new Points.EqualityComparer());
-
+    [HideInInspector] public Dictionary<Points, bool> allMoves = new Dictionary<Points, bool>(new Points.EqualityComparer());
+    [HideInInspector] public Dictionary<Points, bool> allowedMoves = new Dictionary<Points, bool>(new Points.EqualityComparer());
+    [SerializeField] SID_BoardPieceManager PieceManager;
     private void Start()
     {
         Instance = this;
-
         if (M_eventmoment == null)
             M_eventmoment = new UnityEvent();
         aSys = GetComponent<ArmyManager>();
+        PieceManager = SID_BoardPieceManager.instance;
         //buildPos.Callback += UpdatedSetUpBoard;
     }
     public override void OnStartAuthority()
@@ -63,40 +56,17 @@ public class SID_BoardManager_Mirror : NetworkBehaviour
         Debug.Log("I'm here now");
     }
 
-   private void Update()
+    private void Update()
     {
         if (setActive)
         {
-            gridblocksarray = FindObjectsOfType<SID_BoardGridSet>();
-
             //UpdateSelection();
-            GenerateCoordinates();
+            AccountAllMoves();
             UpdateAllMoves();
-            foreach (SID_BoardGridSet gridblock in gridblocksarray)
-            {
-                if (gridblock.isFirstPiece)
-                {
-                    originBoardPiece[2] = gridblock.gameObject;
-                }
-            }
-            //if (Input.GetMouseButtonDown(0))
-            //{
-                //Debug.Log("redemtion");
-                //SelectandMove();
-            //}
-            /*if (Input.GetKeyDown(KeyCode.R))
-            {
-                if (selectedChessmanPlayer != null)
-                {
-                    CmdClearMoves();
-                    //SID_BoardHighlight_Mirror.Instance.RpcHideHighlights();
-                    highlightOn = false;
-                    selectedChessmanPlayer = null;
-                }
-            }*/
+            originBoardPiece[2] = PieceManager.orginPiece;
         }
-        if(isServer)
-        RpcHightlight();
+        if (isServer)
+            RpcHightlight();
         //BuildArmy();
     }
 
@@ -155,19 +125,14 @@ public class SID_BoardManager_Mirror : NetworkBehaviour
         highlightOn = false;
         //SID_BoardHighlight_Mirror.Instance.RpcHideHighlights();
     }
-    private void GenerateCoordinates()
+    private void AccountAllMoves()
     {
-        for (int i = 0; i < gridblocksarray.Length; i++)
+        for (int i = 0; i < PieceManager.gridblocksarray.Length; i++)
         {
-            Points coordinate = new Points(gridblocksarray[i].GridX, gridblocksarray[i].GridY);
-            if (!coordinates.ContainsKey(gridblocksarray[i]))
-                coordinates.Add(gridblocksarray[i], new Points(gridblocksarray[i].GridX, gridblocksarray[i].GridY));
-            else
-                coordinates[gridblocksarray[i]] = coordinate;
-            if (gridblocksarray[i].connected)
+            if (PieceManager.gridblocksarray[i].connected)
             {
-                if (!allMoves.ContainsKey(coordinates[gridblocksarray[i]]))
-                    allMoves.Add(coordinates[gridblocksarray[i]], false);
+                if (!allMoves.ContainsKey(PieceManager.coordinates[PieceManager.gridblocksarray[i]]))
+                    allMoves.Add(PieceManager.coordinates[PieceManager.gridblocksarray[i]], false);
             }
         }
     }
@@ -176,11 +141,11 @@ public class SID_BoardManager_Mirror : NetworkBehaviour
     {
         if (allMoves[new Points(x, y)])
         {
-            for (int i = 0; i < gridblocksarray.Length; i++)
+            for (int i = 0; i < PieceManager.gridblocksarray.Length; i++)
             {
-                if (x == gridblocksarray[i].GridX && y == gridblocksarray[i].GridY)
+                if (x == PieceManager.gridblocksarray[i].GridX && y == PieceManager.gridblocksarray[i].GridY)
                 {
-                    SID_Chessman_Mirror c = gridblocksarray[i].chessM;
+                    SID_Chessman_Mirror c = PieceManager.gridblocksarray[i].chessM;
                     if (c != null && c.isWhite != isWhiteTurn)
                     {
                         activeChessman.Remove(c.gameObject);
@@ -199,17 +164,17 @@ public class SID_BoardManager_Mirror : NetworkBehaviour
         }
         else
         {
-            for (int i = 0; i < gridblocksarray.Length; i++)
+            for (int i = 0; i < PieceManager.gridblocksarray.Length; i++)
             {
-                if (gridblocksarray[i] != null)
+                if (PieceManager.gridblocksarray[i] != null)
                 {
-                    if (x == gridblocksarray[i].GridX && y == gridblocksarray[i].GridY)
+                    if (x == PieceManager.gridblocksarray[i].GridX && y == PieceManager.gridblocksarray[i].GridY)
                     {
-                        if (gridblocksarray[i].pieceOn && gridblocksarray[i].chessM.isWhite == isWhiteTurn)
+                        if (PieceManager.gridblocksarray[i].pieceOn && PieceManager.gridblocksarray[i].chessM.isWhite == isWhiteTurn)
                         {
                             //SID_BoardHighlight_Mirror.Instance.RpcHideHighlights();
                             highlightOn = false;
-                            selectedChessmanPlayer = gridblocksarray[i].chessM;
+                            selectedChessmanPlayer = PieceManager.gridblocksarray[i].chessM;
                             allowedMoves = selectedChessmanPlayer.confirmation;
                             highlightOn = true;
                             SID_BoardHighlight_Mirror.Instance.HighLightAllowedMoves(allowedMoves);
@@ -398,10 +363,21 @@ public class SID_BoardManager_Mirror : NetworkBehaviour
     {
         activeChessman = new List<GameObject>();
 
-        //king
-        SpawnChessman(0, 3, 0, side,co);
-        //Queen
-        SpawnChessman(1, 4, 0, side,co);
+        if (side)
+        {
+            //king
+            SpawnChessman(0, 4, 0, side, co);
+            //Queen
+            SpawnChessman(1, 3, 0, side, co);
+        }
+        else
+        {
+            //king
+            SpawnChessman(0, 3, 0, side, co);
+            //Queen
+            SpawnChessman(1, 4, 0, side, co);
+        }
+
         //Rooks
         SpawnChessman(2, 0, 0, side,co);
         SpawnChessman(2, 7, 0, side,co);

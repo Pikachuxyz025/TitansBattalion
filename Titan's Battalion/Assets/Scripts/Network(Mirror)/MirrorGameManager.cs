@@ -51,7 +51,7 @@ public class MirrorGameManager : NetworkBehaviour
         //RpcSetupCurInfo();
 
         GameObject yo = Instantiate(curBoard[boardId - 1].fieldgrid, new Vector3(0, 0, 0), neutralCoordination);
-        NetworkServer.Spawn(yo,connectionToClient);
+        NetworkServer.Spawn(yo, connectionToClient);
 
         varin = yo;
 
@@ -81,7 +81,7 @@ public class MirrorGameManager : NetworkBehaviour
         //Debug.Log(SetupActive);
     }
 
-    
+
     public void ReadyToGo()
     {
         armyIsSet = AllBoardsAreSet();
@@ -96,68 +96,4 @@ public class MirrorGameManager : NetworkBehaviour
         }
         return true;
     }
-
-    //[Server]
-    //public void Board(GameObject oldvalue, GameObject newvalue)
-    //{
-    //    SetupBoard(newvalue);
-    //}
-
-    //[Server]
-    //public void SetupBoard(GameObject targetGameObject)
-    //{
-    //    BoLo = targetGameObject.GetComponent<BoardLocation>();
-    //    if (BoLo != null)
-    //        Debug.Log("showod");
-
-    //    buildPos[0] = BoLo.playerOnePointA.transform.position;
-    //    buildPos[1] = BoLo.playerOnePointB.transform.position;
-    //    buildPos[2] = BoLo.playerTwoPointA.transform.position;
-    //    buildPos[3] = BoLo.playerTwoPointB.transform.position;
-    //}
-
-    //[ClientRpc]
-    //public void RpcSelectArmy(int armyId, int playerid)
-    //{
-    //    Debug.Log("Method is flowing");
-    //    GameObject yo;
-    //    if (playerid == 1)
-    //    {
-    //        if (!armyIsSet)
-    //        {
-    //            yo = Instantiate(curArmy[armyId - 1].armyGrid, buildPos[0], neutralCoordination) as GameObject;
-    //            NetworkServer.Spawn(yo, connectionToClient);
-    //            SID_BoardGridSet[] children = yo.GetComponentsInChildren<SID_BoardGridSet>();
-    //            foreach (SID_BoardGridSet item in children)
-    //            {
-    //                if (item.startingPieceone)
-    //                {
-    //                    SID_BM.originBoardPiece[0] = item.gameObject;
-    //                    //SID_BM.yo = yo;
-    //                    armyIsSet = true;
-    //                }
-    //            }
-    //        }
-    //    }
-    //    else if (playerid == 2)
-    //    {
-    //        if (!armyIsSet)
-    //        {
-    //            yo = Instantiate(curArmy[armyId - 1].armyGrid, buildPos[2] + new Vector3(0, 0, curArmy[armyId - 1].armyOffset), neutralCoordination) as GameObject;
-    //            NetworkServer.Spawn(yo, connectionToClient);
-    //            SID_BoardGridSet[] children = yo.GetComponentsInChildren<SID_BoardGridSet>();
-    //            foreach (SID_BoardGridSet item in children)
-    //            {
-    //                if (item.startingPiecetwo)
-    //                {
-    //                    SID_BM.originBoardPiece[1] = item.gameObject;
-    //                    //SID_BM.yo = yo;
-    //                    armyIsSet = true;
-    //                }
-    //            }
-    //        }
-    //    }
-    //    else
-    //        Debug.Log("Failure");
-    //}
 }

@@ -14,6 +14,7 @@ GameObject:
   - component: {fileID: 5368427399489409754}
   - component: {fileID: 5368427399489409753}
   - component: {fileID: 6583868475473033406}
+  - component: {fileID: 1544706817619418047}
   m_Layer: 0
   m_Name: GameManager_Mirror
   m_TagString: Untagged
@@ -98,18 +99,27 @@ MonoBehaviour:
   buildModeOn: 0
   setActive: 0
   isWhiteTurn: 1
-  selectedChessman: {fileID: 0}
+  selectionX: -1
+  selectionY: -1
+  controlarmy: 0
+  boardselectionX: 0
+  boardselectionY: 0
+  selectedChessmanPlayer: {fileID: 0}
+  highlightedChessman: {fileID: 0}
   p1chessmanPrefabs: []
   p2chessmanPrefabs: []
   activeChessman: []
   setpos: []
   playerOneArmy: 0
   playerTwoArmy: 0
+  highlightOn: 0
+  selectedChesspiece: {fileID: 0}
   onBoard: 0
   originBoardPiece:
   - {fileID: 0}
   - {fileID: 0}
   - {fileID: 0}
+  PieceManager: {fileID: 0}
 --- !u!114 &5368427399489409753
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -151,7 +161,24 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6eb195ceb92f3ef49bc8447894d04a90, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  syncMode: 0
+  syncInterval: 0.1
   Sid: {fileID: 5368427399489409754}
   highlightPrefab: {fileID: 3160463778558153922, guid: 70e96e618ff762440a08135ebee8e82f,
     type: 3}
   highlights: []
+  player: {fileID: 0}
+--- !u!114 &1544706817619418047
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5368427399489409759}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 82c57eee89994984da5aaa116a746299, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  gridblocksarray: []
+  orginPiece: {fileID: 0}

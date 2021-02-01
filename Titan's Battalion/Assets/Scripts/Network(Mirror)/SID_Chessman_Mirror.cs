@@ -5,22 +5,27 @@ using Mirror;
 
 public abstract class SID_Chessman_Mirror : NetworkBehaviour
 {
-    public int CurrentX, CurrentY;
-    public int rig;
+   public int CurrentX, CurrentY;
+    [HideInInspector] public int rig = 2, whiteInt;
     [SyncVar]
     public bool isWhite, curOnMainBoard;
     //public float range;
-    protected Dictionary<SID_BoardGridSet,Points> scouting = new Dictionary<SID_BoardGridSet,Points>();
+    protected Dictionary<SID_BoardGridSet, Points> scouting = new Dictionary<SID_BoardGridSet, Points>();
     public Dictionary<Points, bool> confirmation = new Dictionary<Points, bool>(new Points.EqualityComparer());
 
-
+    protected SID_BoardPieceManager PieceManager;
     public virtual void Awake()
     {
         SID_BoardManager_Mirror.M_eventmoment.AddListener(Reset);
+        PieceManager = SID_BoardPieceManager.instance;
+        if (isWhite)
+            whiteInt = 0;
+        else
+            whiteInt = 1;
     }
     public virtual void Update()
     {
-        scouting = SID_BoardManager_Mirror.coordinates;
+        scouting = PieceManager.coordinates;
         RaycastHit hit;
         if (Physics.Raycast(this.transform.position, -transform.up, out hit, 5f, LayerMask.GetMask("ChessPlane")))
         {

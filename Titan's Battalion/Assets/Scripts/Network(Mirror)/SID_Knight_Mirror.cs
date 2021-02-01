@@ -21,7 +21,15 @@ public class SID_Knight_Mirror : SID_Chessman_Mirror
     {
         bool r = new bool();
         Points simple = new Points(x, y);
-        foreach (SID_BoardGridSet bgs in scouting.Keys)
+        PieceState pieceStateSimple = PieceManager.VaildatePieces(simple.X, simple.Y, this);
+
+        if (pieceStateSimple == PieceState.Free)
+            r = true;
+        else if (pieceStateSimple == PieceState.Enemy)
+            r = true;
+        if (!confirmation.ContainsKey(simple))
+            confirmation.Add(simple, r);
+        /*foreach (SID_BoardGridSet bgs in scouting.Keys)
         {
             if (SameCoord(simple, scouting[bgs]))
             {
@@ -34,7 +42,7 @@ public class SID_Knight_Mirror : SID_Chessman_Mirror
                 if (!confirmation.ContainsKey(scouting[bgs]))
                     confirmation.Add(scouting[bgs], r);
             }
-        }
+        }*/
     }
 
     public override IEnumerator RemoveEnough()
