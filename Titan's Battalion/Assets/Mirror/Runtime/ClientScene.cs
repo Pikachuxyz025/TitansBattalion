@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Linq;
 using UnityEngine;
 using Guid = System.Guid;
@@ -46,7 +45,7 @@ namespace Mirror
 
         /// <summary>
         /// Returns true when a client's connection has been set to ready.
-        /// <para>A client that is ready recieves state updates from the server, while a client that is not ready does not. This useful when the state of the game is not normal, such as a scene change or end-of-game.</para>
+        /// <para>A client that is ready receives state updates from the server, while a client that is not ready does not. This useful when the state of the game is not normal, such as a scene change or end-of-game.</para>
         /// <para>This is read-only. To change the ready state of a client, use ClientScene.Ready(). The server is able to set the ready state of clients using NetworkServer.SetClientReady(), NetworkServer.SetClientNotReady() and NetworkServer.SetAllClientsNotReady().</para>
         /// <para>This is done when changing scenes so that clients don't receive state update messages during scene loading.</para>
         /// </summary>
@@ -122,11 +121,10 @@ namespace Mirror
         }
 
         /// <summary>
-        /// This adds a player GameObject for this client. This causes an AddPlayer message to be sent to the server, and NetworkManager.OnServerAddPlayer is called. If an extra message was passed to AddPlayer, then OnServerAddPlayer will be called with a NetworkReader that contains the contents of the message.
-        /// <para>extraMessage can contain character selection, etc.</para>
+        /// This adds a player GameObject for this client. This causes an AddPlayer message to be sent to the server, and NetworkManager.OnServerAddPlayer is called.
         /// </summary>
         /// <param name="readyConn">The connection to become ready for this client.</param>
-        /// <returns>True if player was added.</returns>
+        /// <returns>True if AddPlayer message was sent</returns>
         public static bool AddPlayer(NetworkConnection readyConn)
         {
             // ensure valid ready connection
@@ -154,19 +152,12 @@ namespace Mirror
             return true;
         }
 
-        // Deprecated 5/2/2020
-        /// <summary>
-        /// Obsolete: Removed as a security risk. Use <see cref="NetworkServer.RemovePlayerForConnection(NetworkConnection, bool)">NetworkServer.RemovePlayerForConnection</see> instead.
-        /// </summary>
-        [EditorBrowsable(EditorBrowsableState.Never), Obsolete("Removed as a security risk. Use NetworkServer.RemovePlayerForConnection(NetworkConnection conn, bool keepAuthority = false) instead", true)]
-        public static bool RemovePlayer() { return false; }
-
         /// <summary>
         /// Signal that the client connection is ready to enter the game.
         /// <para>This could be for example when a client enters an ongoing game and has finished loading the current scene. The server should respond to the SYSTEM_READY event with an appropriate handler which instantiates the players object for example.</para>
         /// </summary>
         /// <param name="conn">The client connection which is ready.</param>
-        /// <returns>True if succcessful</returns>
+        /// <returns>True if successful</returns>
         public static bool Ready(NetworkConnection conn)
         {
             if (ready)
@@ -934,7 +925,7 @@ namespace Mirror
                 }
             }
 
-            // can't modifiy NetworkIdentity.spawned inside foreach so need 2nd loop to remove
+            // can't modify NetworkIdentity.spawned inside foreach so need 2nd loop to remove
             foreach (uint id in toRemoveFromSpawned)
             {
                 NetworkIdentity.spawned.Remove(id);
@@ -960,22 +951,29 @@ namespace Mirror
             {
                 localObject.OnStopClient();
 
-                if (!InvokeUnSpawnHandler(localObject.assetId, localObject.gameObject))
+                // user handling
+                if (InvokeUnSpawnHandler(localObject.assetId, localObject.gameObject))
                 {
-                    // default handling
-                    if (localObject.sceneId == 0)
-                    {
-                        Object.Destroy(localObject.gameObject);
-                    }
-                    else
-                    {
-                        // scene object.. disable it in scene instead of destroying
-                        localObject.gameObject.SetActive(false);
-                        spawnableObjects[localObject.sceneId] = localObject;
-                    }
+                    // reset object after user's handler
+                    localObject.Reset();
                 }
+                // default handling
+                else if (localObject.sceneId == 0)
+                {
+                    // don't call reset before destroy so that values are still set in OnDestroy
+                    Object.Destroy(localObject.gameObject);
+                }
+                // scene object.. disable it in scene instead of destroying
+                else
+                {
+                    localObject.gameObject.SetActive(false);
+                    spawnableObjects[localObject.sceneId] = localObject;
+                    // reset for scene objects
+                    localObject.Reset();
+                }
+
+                // remove from dictionary no matter how it is unspawned
                 NetworkIdentity.spawned.Remove(netId);
-                localObject.Reset();
             }
             else
             {

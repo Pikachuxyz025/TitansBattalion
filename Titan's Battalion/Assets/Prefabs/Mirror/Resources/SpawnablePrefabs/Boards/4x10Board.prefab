@@ -132,6 +132,7 @@ GameObject:
   - component: {fileID: 4239210235706259424}
   - component: {fileID: 5046098425686374162}
   - component: {fileID: 5132253819109400577}
+  - component: {fileID: -4911573399649777413}
   m_Layer: 0
   m_Name: 4x10Board
   m_TagString: Untagged
@@ -247,6 +248,21 @@ MonoBehaviour:
   localPositionSensitivity: 0.01
   localRotationSensitivity: 0.01
   localScaleSensitivity: 0.01
+--- !u!114 &-4911573399649777413
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4239210235706259426}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1020a74962faada4b807ac5dc053a4cf, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  syncMode: 0
+  syncInterval: 0.1
+  currentMatchDebug: 
 --- !u!1001 &4239210234750499614
 PrefabInstance:
   m_ObjectHideFlags: 0

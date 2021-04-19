@@ -2,13 +2,16 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.Events;
 
 public class UILobby : MonoBehaviour
 {
     public static UILobby instance;
+    public string currentPlayerUsername;
 
     [Header("Host Join")]
     [SerializeField] InputField joinMatchInput;
+    [SerializeField] InputField username;
     [SerializeField] List<Selectable> lobbySelectables = new List<Selectable>();
     [SerializeField] Canvas lobbyCanvas;
     [SerializeField] Canvas searchCanvas;
@@ -17,15 +20,46 @@ public class UILobby : MonoBehaviour
     [SerializeField] Transform UIPlayerParent;
     [SerializeField] GameObject UIPlayerPrefab;
     [SerializeField] Text matchIDText;
-    [SerializeField] GameObject beginGameButton;
-    GameObject playerLobbyUI;
-    bool searching = false;
-    private void Start() => instance = this;
+    public GameObject beginGameButton, readyGameButton;
+    public GameObject selectBoardDropdown;
 
+    [SerializeField] Dropdown boardSelect, armySelect;
+    [SerializeField] MatchMaker matcheHome;
+    public string playerMatchID;
+
+    GameObject playerLobbyUI;
+    bool searching = false, armyActive = false, boardActive = false, onoff = false;
+    [SerializeField] int playerNum = 0;
+    private void Start()
+    {
+        instance = this;
+    }
+
+    private void Update()
+    {
+        if (username.text == "" && username.interactable != false)
+            lobbySelectables.ForEach(x => x.interactable = false);
+        else
+            lobbySelectables.ForEach(x => x.interactable = true);
+        currentPlayerUsername = username.text;
+
+        if (playerMatchID != string.Empty)
+        {
+            if (matcheHome.SetReadyMatch(playerMatchID) && matcheHome.SetMatchFull(playerMatchID))
+            {
+                beginGameButton.GetComponent<Button>().interactable = true;
+                Debug.Log("players ready");
+            }
+            else
+                beginGameButton.GetComponent<Button>().interactable = false;
+
+        }
+    }
 
     public void HostPublic()
     {
         joinMatchInput.interactable = false;
+        username.interactable = false;
         lobbySelectables.ForEach(x => x.interactable = false);
 
         Player_Mirror.localplayer.HostGame(true);
@@ -34,6 +68,7 @@ public class UILobby : MonoBehaviour
     public void HostPrivate()
     {
         joinMatchInput.interactable = false;
+        username.interactable = false;
         lobbySelectables.ForEach(x => x.interactable = false);
 
         Player_Mirror.localplayer.HostGame(false);
@@ -49,17 +84,22 @@ public class UILobby : MonoBehaviour
             playerLobbyUI = SpawnPlayerPrefab(Player_Mirror.localplayer);
             matchIDText.text = matchID;
             beginGameButton.SetActive(true);
+            playerMatchID = matchID;
+
+            selectBoardDropdown.SetActive(true);
+            readyGameButton.GetComponent<Button>().interactable = false;
+            Player_Mirror.localplayer.CmdBecomeHost(true);
         }
         else
         {
-            joinMatchInput.interactable = true;
+            username.interactable = true;
             lobbySelectables.ForEach(x => x.interactable = true);
         }
     }
 
     public void Join()
     {
-        joinMatchInput.interactable = false;
+        username.interactable = false;
         lobbySelectables.ForEach(x => x.interactable = false);
 
         Player_Mirror.localplayer.JoinGame(joinMatchInput.text.ToUpper());
@@ -70,16 +110,18 @@ public class UILobby : MonoBehaviour
         if (success)
         {
             lobbyCanvas.enabled = true;
-            beginGameButton.SetActive(false);
+            ResetSelection();
             if (playerLobbyUI != null)
                 Destroy(playerLobbyUI);
 
             playerLobbyUI = SpawnPlayerPrefab(Player_Mirror.localplayer);
+            readyGameButton.GetComponent<Button>().interactable = false;
             matchIDText.text = matchID;
+            playerMatchID = matchID;
         }
         else
         {
-            joinMatchInput.interactable = true;
+            username.interactable = true;
             lobbySelectables.ForEach(x => x.interactable = true);
         }
     }
@@ -92,9 +134,87 @@ public class UILobby : MonoBehaviour
         return newUIPlayer;
     }
 
+    public void Interaction(bool value) => beginGameButton.GetComponent<Button>().interactable = value;
+
+
     public void BeginGame()
     {
         Player_Mirror.localplayer.BeginGame();
+    }
+
+    public void ArmySelect(int value)
+    {
+        armyActive = value == 0 ? false : true;
+        Player_Mirror.localplayer.CmdArmy(value);
+        readyGameButton.GetComponent<Button>().interactable = ReadyInteractable();
+    }
+
+    public void BoardSelect(int value)
+    {
+        boardActive = value == 0 ? false : true;
+
+        Player_Mirror.localplayer.CmdBoard(value);
+        readyGameButton.GetComponent<Button>().interactable = ReadyInteractable();
+    }
+
+    public bool ReadyInteractable()
+    {
+        if (selectBoardDropdown.activeInHierarchy)
+        {
+            if (armyActive && boardActive)
+                return true;
+        }
+        else
+        {
+            if (armyActive)
+                return true;
+        }
+        return false;
+    }
+
+    public void ReadyToGo()
+    {
+        onoff = !onoff;
+        if (onoff)
+            playerLobbyUI.GetComponent<UIPlayer>().SetReady();
+        else
+            playerLobbyUI.GetComponent<UIPlayer>().SetNotReady();
+        Player_Mirror.localplayer.Ready();
+       
+    }
+    public bool NotifyPlayersOfReadyState(SyncListGameObject _players, bool setnStone)
+    {
+        if (setnStone)
+        {
+            if (IsReadyToStart(_players))
+                return true;
+            else
+                return false;
+        }
+        else
+            return false;
+    }
+
+    private bool IsReadyToStart(SyncListGameObject _players)
+    {
+        foreach (var player in _players)
+        {
+            if (!player.GetComponent<Player_Mirror>().isReady)
+                return false;
+        }
+        return true;
+    }
+
+    void ResetSelection()
+    {
+        boardSelect.value = 0;
+        armySelect.value = 0;
+        boardSelect.interactable = true;
+        armySelect.interactable = true;
+        beginGameButton.SetActive(false);
+        readyGameButton.GetComponent<Button>().interactable = false;
+        selectBoardDropdown.SetActive(false);
+        Player_Mirror.localplayer.CmdBecomeHost(false);
     }
 
     public void SearchGame()
@@ -136,6 +256,7 @@ public class UILobby : MonoBehaviour
     public void SearchCancel()
     {
         searchCanvas.enabled = false;
+        username.interactable = true;
         lobbySelectables.ForEach(x => x.interactable = true);
         searching = false;
     }
@@ -148,7 +269,9 @@ public class UILobby : MonoBehaviour
         Player_Mirror.localplayer.DisconnectGame();
 
         lobbyCanvas.enabled = false;
+        username.interactable = true;
         lobbySelectables.ForEach(x => x.interactable = true);
-        beginGameButton.SetActive(false);
+        ResetSelection();
+        playerMatchID = string.Empty;
     }
 }

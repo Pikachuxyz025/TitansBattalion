@@ -8,16 +8,15 @@ public class SID_BoardHighlight_Mirror : NetworkBehaviour
 {
     public static SID_BoardHighlight_Mirror Instance;
     public SID_BoardManager_Mirror Sid;
+    public Transform originPieceTrans;
     public GameObject highlightPrefab;
     public List<GameObject> highlights;
-    public PlayerInfo player;
     private const float TileSize = 1.0f, TileOffset = 0.5f;
     Quaternion nine = Quaternion.Euler(0, 90, 0);
     private void Awake()
     {
         Instance = this;
         highlights = new List<GameObject>();
-        Debug.Log("Voice");
     }
 
     private GameObject GetHighlighObject()
@@ -26,13 +25,31 @@ public class SID_BoardHighlight_Mirror : NetworkBehaviour
         if (go == null)
         {
             go = Instantiate(highlightPrefab);
+            go.GetComponent<NetworkMatchChecker>().matchId = GetComponent<NetworkMatchChecker>().matchId;
             NetworkServer.Spawn(go);
             RpcSetupnAdd(go);
         }
-        Debug.Log(go == null);
         return go;
     }
 
+    private GameObject GetHighlighObjects()
+    {
+        GameObject go = highlights.Find(g => !g.activeSelf);
+        if (go == null)
+        {
+            go = Instantiate(highlightPrefab);
+            highlights.Add(go);
+        }       
+        return go;
+    }
+    void SetnSpawn(Vector3 varin)
+    {
+        GameObject go = GetHighlighObjects();
+        //Debug.Log(go == null);
+        go.SetActive(true);
+        go.transform.rotation = nine;
+        go.transform.position = varin;
+    }
 
     #region Command
 
@@ -88,18 +105,19 @@ public class SID_BoardHighlight_Mirror : NetworkBehaviour
         {
             if (moves[point])
             {
-                //GameObject go = GetHighlighObject();
-                ////Debug.Log(go == null);
-                //go.SetActive(true);
-                //go.transform.rotation = nine;
-                //go.transform.position = GetTileCenter(point.X, point.Y);
-                //if (isServer)
-                //    RpcSetnGo(go);
                 CmdSetnSpawn(GetTileCenter(point.X, point.Y));
             }
-
         }
     }
+
+    public void HighLightAllowedMove(Dictionary<Points, bool> moves)
+    {
+        foreach (Points point in moves.Keys.ToList<Points>())
+        {
+            SetnSpawn(GetTileTestCenter(point.X, point.Y));
+        }
+    }
+
     private Vector3 GetTileCenter(int x, int y)
     {
         Vector3 origin = Sid.originBoardPiece[2].transform.position;
@@ -109,6 +127,14 @@ public class SID_BoardHighlight_Mirror : NetworkBehaviour
         return origin;
     }
 
+    private Vector3 GetTileTestCenter(int x, int y)
+    {
+        Vector3 origin = originPieceTrans.position;
+        origin.x += (TileSize * x);
+        origin.y += 1.01f;
+        origin.z += (TileSize * y);
+        return origin;
+    }
     public void HideHighlights()
     {
         foreach (GameObject go in highlights)

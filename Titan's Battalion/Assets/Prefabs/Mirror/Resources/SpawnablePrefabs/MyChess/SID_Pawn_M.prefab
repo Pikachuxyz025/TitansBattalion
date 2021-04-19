@@ -17,6 +17,7 @@ GameObject:
   - component: {fileID: -767151773202189019}
   - component: {fileID: 5371642919791565713}
   - component: {fileID: 5246787915197819727}
+  - component: {fileID: 7221329992053357021}
   m_Layer: 11
   m_Name: SID_Pawn_M
   m_TagString: Untagged
@@ -2495,3 +2496,32 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4a6ddb709db34a24885728d7806a3af7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  syncMode: 0
+  syncInterval: 0.1
+  CurrentX: 0
+  CurrentY: 0
+  rig: 2
+  whiteInt: 0
+  isWhite: 0
+  curOnMainBoard: 0
+  siD: []
+  stD: 
+  duoMovement: 0
+  enPassantCoordinates:
+    X: 0
+    Y: 0
+--- !u!114 &7221329992053357021
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1969503369970440120}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1020a74962faada4b807ac5dc053a4cf, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  syncMode: 0
+  syncInterval: 0.1
+  currentMatchDebug: 

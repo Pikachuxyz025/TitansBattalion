@@ -10,8 +10,8 @@ public class SID_BoardGridSet : NetworkBehaviour
     public float grdSiz;
     public int GridX = -1, GridY = -1;
     public bool isFirstPiece, startingPieceone, startingPiecetwo, isMainBoard, pieceOn;
-    [HideInInspector] public bool Down, Left, Right, Up;
-    [HideInInspector] public bool connected;
+ public bool Down, Left, Right, Up;
+ public bool connected;
     SID_BoardGridSet GBSone, GBStwo, GBSthree, GBSfour;
     public SID_Chessman chess;
     public SID_Chessman_Mirror chessM;
@@ -90,7 +90,7 @@ public class SID_BoardGridSet : NetworkBehaviour
         {
             if (connected)
             {
-                #region Lines
+                /*#region Lines
                 if (GridX == 0 && GridY >= 1)
                 {
                     if (Up && !GBStwo.isFirstPiece)
@@ -176,6 +176,49 @@ public class SID_BoardGridSet : NetworkBehaviour
                         }
                     }
                 }
+                #endregion*/
+
+                #region Testing Lines
+                if (GridX == 0 && GridY >= 1)
+                {
+                    if (Up && !GBStwo.connected)
+                    {
+                        GBStwo.GridY = GridY + 1;
+                        GBStwo.GridX = GridX;
+                        GBStwo.connected = true;
+                    }
+                }
+
+                if (GridX == 0 && GridY <= -1)
+                {
+                    if (Down && !GBSone.connected)
+                    {
+                        GBSone.GridY = GridY - 1;
+                        GBSone.GridX = GridX;
+                        GBSone.connected = true;
+                    }
+                }
+
+                if (GridX < 0 && GridY == 0)
+                {
+                    if (Left && !GBSthree.connected)
+                    {
+                        GBSthree.GridX = GridX - 1;
+                        GBSthree.GridY = GridY;
+                        GBSthree.connected = true;
+                    }
+                }
+
+                if (GridX > 0 && GridY == 0)
+                {
+                    if (Right && !GBSfour.connected)
+                    {
+                        GBSfour.GridX = GridX + 1;
+                        GBSfour.GridY = GridY;
+                        GBSfour.connected = true;
+                    }
+                }
+
                 #endregion
 
                 #region Quadrants
@@ -344,6 +387,104 @@ public class SID_BoardGridSet : NetworkBehaviour
                             }
                         }
                     }
+                }
+                #endregion
+
+                #region Testing Quadrants
+                //quadrant (+,+)
+                if ((GridY >= 0 && GridX >= 0))
+                {
+                    if (Up && !GBStwo.connected)
+                    {
+                        GBStwo.GridY = GridY + 1;
+                        GBStwo.GridX = GridX;
+                        GBStwo.connected = true;
+                    }
+
+                    if (Right && !GBSfour.connected)
+                    {
+                        GBSfour.GridX = GridX + 1;
+                        GBSfour.GridY = GridY;
+                        GBSfour.connected = true;
+                    }
+                }
+
+                //quadrant (-,+)
+                if ((GridY >= 0 && GridX <= 0))
+                {
+                    if (Up && !GBStwo.connected)
+                    {
+                        GBStwo.GridY = GridY + 1;
+                        GBStwo.GridX = GridX;
+                        GBStwo.connected = true;
+                    }
+
+                    if (Left && !GBSthree.connected)
+                    {
+                        GBSthree.GridX = GridX - 1;
+                        GBSthree.GridY = GridY;
+                        GBSthree.connected = true;
+                    }
+                }
+                //quadrant (+,-)
+                if ((GridY <= 0 && GridX >= 0))
+                {
+                    if (Right && !GBSfour.connected)
+                    {
+                        GBSfour.GridX = GridX + 1;
+                        GBSfour.GridY = GridY;
+                        GBSfour.connected = true;
+                    }
+                    if (Down && !GBSone.connected)// && !GBSone.connected)
+                    {
+                        GBSone.GridY = GridY - 1;
+                        GBSone.GridX = GridX;
+                        GBSone.connected = true;
+                    }
+                }
+
+                //quadrant (-,-)
+                if (GridY <= 0 && GridX <= 0)
+                {
+                    if (Left && !GBSthree.connected)
+                    {
+                        GBSthree.GridX = GridX - 1;
+                        GBSthree.GridY = GridY;
+                        GBSthree.connected = true;
+                    }
+
+                    if (Down && !GBSone.connected)
+                    {
+                        GBSone.GridY = GridY - 1;
+                        GBSone.GridX = GridX;
+                        GBSone.connected = true;
+                    }
+                }
+
+                //everything else
+                if (Left && !GBSthree.connected)
+                {
+                    GBSthree.GridX = GridX - 1;
+                    GBSthree.GridY = GridY;
+                    GBSthree.connected = true;
+                }
+                if (Down && !GBSone.connected)
+                {
+                    GBSone.GridY = GridY - 1;
+                    GBSone.GridX = GridX;
+                    GBSone.connected = true;
+                }
+                if (Right && !GBSfour.connected)
+                {
+                    GBSfour.GridX = GridX + 1;
+                    GBSfour.GridY = GridY;
+                    GBSfour.connected = true;
+                }
+                if (Up && !GBStwo.connected)
+                {
+                    GBStwo.GridY = GridY + 1;
+                    GBStwo.GridX = GridX;
+                    GBStwo.connected = true;
                 }
                 #endregion
             }

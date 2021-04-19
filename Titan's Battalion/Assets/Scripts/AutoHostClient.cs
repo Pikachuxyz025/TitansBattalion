@@ -7,7 +7,8 @@ public class AutoHostClient : MonoBehaviour
 {
     [SerializeField] NetworkManager networkManager;
 
-    private void Start()
+    [SerializeField] GameObject startingScreen, connectionScreen;
+    /*private void Start()
     {
         if (!Application.isBatchMode)
         {
@@ -18,11 +19,46 @@ public class AutoHostClient : MonoBehaviour
         {
             Debug.Log("Server Starting");
         }
+    }*/
+    public void Online() => StartCoroutine(GetOnline());
+
+    IEnumerator GetOnline()
+    {
+        startingScreen.SetActive(false);
+        networkManager.StartClient();
+        //JoinLocal();
+        yield return new WaitForSeconds(3f);
+
+        if (!networkManager.isNetworkActive)
+        {
+            Debug.Log("Server isn't active");
+            connectionScreen.SetActive(true);
+        }
+        else
+        {
+            Debug.Log("Server is active");
+
+            connectionScreen.SetActive(true);
+            yield return null;
+        }
+        yield return null;
+    }
+
+    public void BackButton()
+    {
+        connectionScreen.SetActive(false);
+        startingScreen.SetActive(true);
+        networkManager.StopClient();
     }
 
     public void JoinLocal()
     {
-        networkManager.networkAddress = "localhost";
+        networkManager.networkAddress = "3.18.125.165"/*"localhost"*/;
+        networkManager.StartClient();
+    }
+
+    public void local()
+    {
         networkManager.StartClient();
     }
 }

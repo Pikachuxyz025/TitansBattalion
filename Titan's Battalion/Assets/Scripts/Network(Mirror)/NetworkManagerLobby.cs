@@ -183,13 +183,13 @@ public class NetworkManagerLobby : NetworkManager
             NetworkServer.Spawn(manager);
 
             //manager.GetComponent<MirrorGameManager>().RpcSetupCurInfo();
-            manager.GetComponent<MirrorGameManager>().SelectBoard(BoardId);
+           // manager.GetComponent<MirrorGameManager>().SelectBoard(BoardId);
 
             GameObject player = Instantiate(playerSpawnSystem);
             NetworkServer.Spawn(player);
 
             player.GetComponent<PlayerSpawnSystem>().managerGameobject = manager;
-            PlayerSpawnSystem.manager = player.GetComponent<PlayerSpawnSystem>().managerGameobject.GetComponent<MirrorGameManager>();
+            //PlayerSpawnSystem.manager = player.GetComponent<PlayerSpawnSystem>().managerGameobject.GetComponent<MirrorGameManager>();
         }
     }
 

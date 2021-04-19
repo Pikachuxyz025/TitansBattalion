@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Security.Cryptography;
 using Mirror.RemoteCalls;
 using UnityEngine;
@@ -38,72 +37,75 @@ namespace Mirror
     ///     The NetworkIdentity manages the dirty state of the NetworkBehaviours of the object.
     ///     When it discovers that NetworkBehaviours are dirty, it causes an update packet to be created and sent to clients.
     /// </para>
-    /// <para>
-    ///     The flow for serialization updates managed by the NetworkIdentity is:
+    /// 
     /// <list type="bullet">
-    ///     <item>
+    ///     <listheader><description>
+    ///         The flow for serialization updates managed by the NetworkIdentity is:
+    ///     </description></listheader>
+    ///     
+    ///     <item><description>
     ///         Each NetworkBehaviour has a dirty mask. This mask is available inside OnSerialize as syncVarDirtyBits
-    ///     </item>
-    ///     <item>
+    ///     </description></item>
+    ///     <item><description>
     ///         Each SyncVar in a NetworkBehaviour script is assigned a bit in the dirty mask.
-    ///     </item>
-    ///     <item>
+    ///     </description></item>
+    ///     <item><description>
     ///         Changing the value of SyncVars causes the bit for that SyncVar to be set in the dirty mask
-    ///     </item>
-    ///     <item>
+    ///     </description></item>
+    ///     <item><description>
     ///         Alternatively, calling SetDirtyBit() writes directly to the dirty mask
-    ///     </item>
-    ///     <item>
+    ///     </description></item>
+    ///     <item><description>
     ///         NetworkIdentity objects are checked on the server as part of it&apos;s update loop
-    ///     </item>
-    ///     <item>
+    ///     </description></item>
+    ///     <item><description>
     ///         If any NetworkBehaviours on a NetworkIdentity are dirty, then an UpdateVars packet is created for that object
-    ///     </item>
-    ///     <item>
+    ///     </description></item>
+    ///     <item><description>
     ///         The UpdateVars packet is populated by calling OnSerialize on each NetworkBehaviour on the object
-    ///     </item>
-    ///     <item>
+    ///     </description></item>
+    ///     <item><description>
     ///         NetworkBehaviours that are NOT dirty write a zero to the packet for their dirty bits
-    ///     </item>
-    ///     <item>
+    ///     </description></item>
+    ///     <item><description>
     ///         NetworkBehaviours that are dirty write their dirty mask, then the values for the SyncVars that have changed
-    ///     </item>
-    ///     <item>
+    ///     </description></item>
+    ///     <item><description>
     ///         If OnSerialize returns true for a NetworkBehaviour, the dirty mask is reset for that NetworkBehaviour,
     ///         so it will not send again until its value changes.
-    ///     </item>
-    ///     <item>
+    ///     </description></item>
+    ///     <item><description>
     ///         The UpdateVars packet is sent to ready clients that are observing the object
-    ///     </item>
+    ///     </description></item>
     /// </list>
-    /// </para>
-    /// <para>
-    ///     On the client:
+    /// 
     /// <list type="bullet">
-    ///     <item>
+    ///     <listheader><description>
+    ///         On the client:
+    ///     </description></listheader>
+    ///     <item><description>
     ///         an UpdateVars packet is received for an object
-    ///     </item>
-    ///     <item>
+    ///     </description></item>
+    ///     <item><description>
     ///         The OnDeserialize function is called for each NetworkBehaviour script on the object
-    ///     </item>
-    ///     <item>
+    ///     </description></item>
+    ///     <item><description>
     ///         Each NetworkBehaviour script on the object reads a dirty mask.
-    ///     </item>
-    ///     <item>
+    ///     </description></item>
+    ///     <item><description>
     ///         If the dirty mask for a NetworkBehaviour is zero, the OnDeserialize functions returns without reading any more
-    ///     </item>
-    ///     <item>
+    ///     </description></item>
+    ///     <item><description>
     ///         If the dirty mask is non-zero value, then the OnDeserialize function reads the values for the SyncVars that correspond to the dirty bits that are set
-    ///     </item>
-    ///     <item>
+    ///     </description></item>
+    ///     <item><description>
     ///         If there are SyncVar hook functions, those are invoked with the value read from the stream.
-    ///     </item>
+    ///     </description></item>
     /// </list>
-    /// </para>
     /// </remarks>
     [DisallowMultipleComponent]
     [AddComponentMenu("Network/NetworkIdentity")]
-    [HelpURL("https://mirror-networking.com/docs/Components/NetworkIdentity.html")]
+    [HelpURL("https://mirror-networking.com/docs/Articles/Components/NetworkIdentity.html")]
     public sealed class NetworkIdentity : MonoBehaviour
     {
         static readonly ILogger logger = LogFactory.GetLogger<NetworkIdentity>();
@@ -187,6 +189,7 @@ namespace Mirror
         /// Flag to make this object only exist when the game is running as a server (or host).
         /// </summary>
         [FormerlySerializedAs("m_ServerOnly")]
+        [Tooltip("Prevents this object from being spawned / enabled on clients")]
         public bool serverOnly;
 
         /// <summary>
@@ -266,20 +269,22 @@ namespace Mirror
         /// Unique identifier used to find the source assets when server spawns the on clients.
         /// </summary>
         /// <remarks>
-        /// The AssetId trick:
         /// <list type="bullet">
-        ///     <item>
+        /// <listheader><description>
+        ///     The AssetId trick:
+        /// </description></listheader>
+        ///     <item><description>
         ///         Ideally we would have a serialized 'Guid m_AssetId' but Unity can't
         ///         serialize it because Guid's internal bytes are private
-        ///     </item>
-        ///     <item>
+        ///     </description></item>
+        ///     <item><description>
         ///         UNET used 'NetworkHash128' originally, with byte0, ..., byte16
         ///         which works, but it just unnecessary extra code
-        ///     </item>
-        ///     <item>
+        ///     </description></item>
+        ///     <item><description>
         ///         Using just the Guid string would work, but it's 32 chars long and
         ///         would then be sent over the network as 64 instead of 16 bytes
-        ///     </item>
+        ///     </description></item>
         /// </list>
         /// The solution is to serialize the string internally here and then
         /// use the real 'Guid' type for everything else via .assetId
@@ -318,7 +323,7 @@ namespace Mirror
                 // old not empty
                 if (!string.IsNullOrEmpty(oldAssetIdSrting))
                 {
-                    logger.LogError($"Can not Set AssetId on NetworkIdentity '{name}' becasue it already had an assetId, current assetId '{oldAssetIdSrting}', attempted new assetId '{newAssetIdString}'");
+                    logger.LogError($"Can not Set AssetId on NetworkIdentity '{name}' because it already had an assetId, current assetId '{oldAssetIdSrting}', attempted new assetId '{newAssetIdString}'");
                     return;
                 }
 
@@ -379,7 +384,7 @@ namespace Mirror
         /// <para>Whenever an object is spawned with client authority, or the client authority status of an object is changed with AssignClientAuthority or RemoveClientAuthority, then this callback will be invoked.</para>
         /// <para>This callback is only invoked on the server.</para>
         /// </summary>
-        public static ClientAuthorityCallback clientAuthorityCallback;
+        public static event ClientAuthorityCallback clientAuthorityCallback;
 
         /// <summary>
         /// this is used when a connection is destroyed, since the "observers" property is read-only
@@ -562,11 +567,18 @@ namespace Mirror
         //    if no scene is in build settings then Editor and Build have
         //    different indices too (Editor=0, Build=-1)
         // => ONLY USE THIS FROM POSTPROCESSSCENE!
-        [EditorBrowsable(EditorBrowsableState.Never)]
         public void SetSceneIdSceneHashPartInternal()
         {
+            // Use `ToLower` to that because BuildPipeline.BuildPlayer is case insensitive but hash is case sensitive
+            // If the scene in the project is `forest.unity` but `Forest.unity` is given to BuildPipeline then the
+            // BuildPipeline will use `Forest.unity` for the build and create a different hash than the editor will.
+            // Using ToLower will mean the hash will be the same for these 2 paths
+            // Assets/Scenes/Forest.unity
+            // Assets/Scenes/forest.unity
+            string scenePath = gameObject.scene.path.ToLower();
+
             // get deterministic scene hash
-            uint pathHash = (uint)gameObject.scene.path.GetStableHashCode();
+            uint pathHash = (uint)scenePath.GetStableHashCode();
 
             // shift hash from 0x000000FFFFFFFF to 0xFFFFFFFF00000000
             ulong shiftedHash = (ulong)pathHash << 32;
@@ -580,6 +592,17 @@ namespace Mirror
 
         void SetupIDs()
         {
+            // IMPORTANT: DO NOT EVER try to change ids at runtime!
+            //            fixes a bug where changing any NetworkIdentity setting
+            //            at runtime would clear the NetworkIdentity.assetId,
+            //            causing respawn bugs where client would receive an
+            //            empty assetId (forceHidden -> not forceHidden).
+            //            => changing any setting would call OnValidate
+            //            => OnValidate calls SetupIDs which would not find the
+            //               prefab connection at runtime and reset the assetId!
+            if (EditorApplication.isPlaying)
+                return;
+
             if (ThisIsAPrefab())
             {
                 // force 0 for prefabs
@@ -684,7 +707,7 @@ namespace Mirror
             netId = GetNextNetworkId();
             observers = new Dictionary<int, NetworkConnection>();
 
-            if (logger.LogEnabled()) logger.Log("OnStartServer " + this + " NetId:" + netId + " SceneId:" + sceneId);
+            if (logger.LogEnabled()) logger.Log("OnStartServer " + this + " NetId:" + netId + " SceneId:" + sceneId.ToString("X"));
 
             // add to spawned (note: the original EnableIsServer isn't needed
             // because we already set m_isServer=true above)
@@ -856,17 +879,9 @@ namespace Mirror
 
         /// <summary>
         /// check if observer can be seen by connection.
-        /// <list type="bullet">
-        ///     <item>
-        ///         returns visibility.OnCheckObserver
-        ///     </item>
-        ///     <item>
-        ///         returns true if we have no NetworkVisibility, default objects are visible
-        ///     </item>
-        /// </list>
         /// </summary>
         /// <param name="conn"></param>
-        /// <returns></returns>
+        /// <returns>true if we have no NetworkVisibility, default objects are visible</returns>
         internal bool OnCheckObserver(NetworkConnection conn)
         {
             if (visibility != null)
@@ -887,7 +902,7 @@ namespace Mirror
         {
             foreach (NetworkBehaviour comp in NetworkBehaviours)
             {
-                // an exception in OnNetworkDestroy should be caught, so that
+                // an exception in OnStopClient should be caught, so that
                 // one component's exception doesn't stop all other components
                 // from being initialized
                 // => this is what Unity does for Start() etc. too.
@@ -898,7 +913,7 @@ namespace Mirror
                 }
                 catch (Exception e)
                 {
-                    logger.LogError("Exception in OnNetworkDestroy:" + e.Message + " " + e.StackTrace);
+                    logger.LogError("Exception in OnStopClient:" + e.Message + " " + e.StackTrace);
                 }
                 isServer = false;
             }
@@ -1023,7 +1038,7 @@ namespace Mirror
             catch (Exception e)
             {
                 // show a detailed error and let the user know what went wrong
-                logger.LogError($"OnDeserialize failed for: object={name} component={comp.GetType()} sceneId={sceneId:X} length={contentSize}. Possible Reasons:\n" +
+                logger.LogError($"OnDeserialize failed Exception={e.GetType()} (see below) object={name} component={comp.GetType()} sceneId={sceneId:X} length={contentSize}. Possible Reasons:\n" +
                     $"  * Do {comp.GetType()}'s OnSerialize and OnDeserialize calls write the same amount of data({contentSize} bytes)? \n" +
                     $"  * Was there an exception in {comp.GetType()}'s OnSerialize/OnDeserialize code?\n" +
                     $"  * Are the server and client the exact same project?\n" +

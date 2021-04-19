@@ -1,15 +1,24 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using UnityEngine.Events;
 using UnityEngine;
 using Mirror;
 
 public class SID_Rook_Mirror : SID_Chessman_Mirror
 {
     public List<Points> siD;
+    public List<Points> seD;
     public bool hasMoved = false;
    // [HideInInspector] public Points mCastleTriggerPoints = null;
     public Points mCastlePoints = null;
+    private UnityEvent futureScouter;
 
+    public override void Awake()
+    {
+        base.Awake();
+        if (futureScouter == null)
+            futureScouter = new UnityEvent();
+    }
     public override void Update()
     {
         base.Update();
@@ -17,7 +26,8 @@ public class SID_Rook_Mirror : SID_Chessman_Mirror
         {
             FindPossiblilties();
         }
-        siD = new List<Points>(confirmation.Keys);
+        siD = new List<Points>(confirmedMoves.Keys);
+        seD = new List<Points>(futureMoves.Keys);
     }
 
     void AdditionalPlacement()
@@ -29,7 +39,7 @@ public class SID_Rook_Mirror : SID_Chessman_Mirror
         mCastlePoints = SetPoint(castleOffset);
     }
 
-    bool RookMove(int x, int y)
+    bool RookMove(int x, int y, ref Dictionary<Points, bool> confirmation)
     {
         bool r = new bool();
         Points simple = new Points(x, y);
@@ -39,33 +49,25 @@ public class SID_Rook_Mirror : SID_Chessman_Mirror
             r = true;
         else if (pieceStateSimple == PieceState.Enemy)
         {
+            SID_Chessman_Mirror chessPiece = PieceManager.FindChessman(simple.X, simple.Y);
+            if (chessPiece.GetType().ToString() == "SID_King_Mirror")
+            {
+                Debug.Log("CheckPoint");
+                SID_King_Mirror king = chessPiece as SID_King_Mirror;
+                if (confirmation == confirmedMoves)
+                    king.checkers = CheckState.inCheck;
+                else if (confirmation == futureMoves)
+                    king.checkers = CheckState.inCheckZone;
+            }
+
             if (!confirmation.ContainsKey(simple))
                 confirmation.Add(simple, true);
+
             r = false;
             return r;
         }
         if (!confirmation.ContainsKey(simple))
             confirmation.Add(simple, r);
-
-        /*foreach (SID_BoardGridSet bgs in scouting.Keys)
-        {
-            if (SameCoord(simple, scouting[bgs]))
-            {
-                if (!bgs.pieceOn)
-                {
-                    r = true;
-                }
-                else if (isWhite != bgs.chessM.isWhite)
-                {
-                    if (!confirmation.ContainsKey(scouting[bgs]))
-                        confirmation.Add(scouting[bgs], true);
-                    r = false;
-                    return r;
-                }
-                if (!confirmation.ContainsKey(scouting[bgs]))
-                    confirmation.Add(scouting[bgs], r);
-            }
-        }*/
         return r;
     }
 
@@ -90,31 +92,68 @@ public class SID_Rook_Mirror : SID_Chessman_Mirror
         return newPosition;
     }
 
-    public override IEnumerator RemoveEnough()
+    public override void CalculateFutureMoves()
     {
-        confirmation.Clear();
+        futureMoves.Clear();
+        foreach (Points coord in new List<Points>(confirmedMoves.Keys))
+        {
+            if (confirmedMoves[coord])
+                StartCoroutine(FutureSight(coord.X, coord.Y));
+        }
+    }
+
+    public override IEnumerator CalculateCurrentMoves()
+    {
+        confirmedMoves.Clear();
         yield return new WaitForSeconds(.1f);
         int x;
         x = CurrentX;
         do
         {
             x++;
-        } while (RookMove(x, CurrentY));
+        } while (RookMove(x, CurrentY, ref confirmedMoves));
         x = CurrentX;
         do
         {
             x--;
-        } while (RookMove(x, CurrentY));
+        } while (RookMove(x, CurrentY, ref confirmedMoves));
         x = CurrentY;
         do
         {
             x++;
-        } while (RookMove(CurrentX, x));
+        } while (RookMove(CurrentX, x, ref confirmedMoves));
         x = CurrentY;
         do
         {
             x--;
-        } while (RookMove(CurrentX, x));
+        } while (RookMove(CurrentX, x, ref confirmedMoves));
+        CalculateFutureMoves();
         yield return rig += 1;
+    }
+
+    public override IEnumerator FutureSight(int curX, int curY)
+    {
+        yield return new WaitForSeconds(.1f);
+        int x;
+        x = curX;
+        do
+        {
+            x++;
+        } while (RookMove(x, curY, ref futureMoves));
+        x = curX;
+        do
+        {
+            x--;
+        } while (RookMove(x, curY, ref futureMoves));
+        x = curY;
+        do
+        {
+            x++;
+        } while (RookMove(curX, x, ref futureMoves));
+        x = curY;
+        do
+        {
+            x--;
+        } while (RookMove(curX, x, ref futureMoves));
     }
 }

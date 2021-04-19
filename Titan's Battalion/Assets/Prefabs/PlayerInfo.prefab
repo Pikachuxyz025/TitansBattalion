@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 8846051556597120579}
   - component: {fileID: 8846051556597120576}
   - component: {fileID: 6708284944612466723}
+  - component: {fileID: -4207520313798593432}
   m_Layer: 0
   m_Name: PlayerInfo
   m_TagString: Untagged
@@ -48,15 +49,32 @@ MonoBehaviour:
   syncInterval: 0.1
   ArmyId: 0
   username: 
-  BoLo: {fileID: 0}
   playerNum: 0
+  gameManager: {fileID: 0}
+  highlightman: {fileID: 0}
+  reso: {fileID: 0}
+  mirrorGameManager: {fileID: 0}
+  SID_BM: {fileID: 0}
+  cam: {fileID: 0}
+  BoLo: {fileID: 0}
   buildPos:
   - {x: 0, y: 0, z: 0}
   - {x: 0, y: 0, z: 0}
   - {x: 0, y: 0, z: 0}
   - {x: 0, y: 0, z: 0}
-  identity: {fileID: 6708284944612466723}
-  mirrorGameManager: {fileID: 0}
+  armyPieces: []
+  armyIsSet: 0
+  boardset: 0
+  onBoard: 0
+  setToMatch: 0
+  isWhite: 0
+  armyBoard: {fileID: 0}
+  highlightchessman: {fileID: 0}
+  set:
+  - {fileID: 0}
+  - {fileID: 0}
+  PieceManager: {fileID: 0}
+  show: 0
 --- !u!114 &6708284944612466723
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -73,3 +91,18 @@ MonoBehaviour:
   serverOnly: 0
   m_AssetId: 
   hasSpawned: 0
+--- !u!114 &-4207520313798593432
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8846051556597120577}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1020a74962faada4b807ac5dc053a4cf, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  syncMode: 0
+  syncInterval: 0.1
+  currentMatchDebug: 

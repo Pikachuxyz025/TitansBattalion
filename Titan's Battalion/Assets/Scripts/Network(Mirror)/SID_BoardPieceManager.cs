@@ -87,6 +87,16 @@ public class SID_BoardPieceManager : MonoBehaviour
         }
     }
 
+    public bool IsOnMainBoard(int targetX, int targetY)
+    {
+        SID_BoardGridSet gridPiece = null;
+        if (reverseCoordinates.ContainsKey(new Points(targetX, targetY)))
+            gridPiece = reverseCoordinates[new Points(targetX, targetY)];
+        if (gridPiece != null)
+            return gridPiece.isMainBoard;
+        return false;
+    }
+
     // give us a way to select pieces on the board
     public Points FindCoordinate(SID_BoardGridSet boardGridSet)
     {
@@ -106,5 +116,14 @@ public class SID_BoardPieceManager : MonoBehaviour
         else
             gridSet = null;
         return gridSet;
+    }
+
+    public SID_Chessman_Mirror FindChessman(int targetX, int targetY)
+    {
+        SID_BoardGridSet gridPiece = null;
+        if (reverseCoordinates.ContainsKey(new Points(targetX, targetY)))
+            gridPiece = reverseCoordinates[new Points(targetX, targetY)];
+
+            return gridPiece.chessM;
     }
 }

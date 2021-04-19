@@ -344,25 +344,4 @@ public class SID_BoardManager : MonoBehaviour
         return true;
     }
 }
-[Serializable]
-public class Points
-{
-    public int X;
-    public int Y;
-    public Points(int x, int y)
-    {
-        X = x;
-        Y = y;
-    }
-    public class EqualityComparer : IEqualityComparer<Points>
-    {
-        public bool Equals(Points x, Points y)
-        {
-            return x.X == y.X && x.Y == y.Y;
-        }
-        public int GetHashCode(Points x)
-        {
-            return x.X ^ x.Y;
-        }
-    }
-}
+

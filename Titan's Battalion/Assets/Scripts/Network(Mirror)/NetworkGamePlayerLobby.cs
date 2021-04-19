@@ -31,7 +31,7 @@ public class NetworkGamePlayerLobby : NetworkBehaviour
         Debug.Log(displayName + " has " + armyId + " as an ID");
     }
 
-    public override void OnNetworkDestroy()
+    public override void OnStopServer()
     {
         Room.GamePlayers.Remove(this);
     }

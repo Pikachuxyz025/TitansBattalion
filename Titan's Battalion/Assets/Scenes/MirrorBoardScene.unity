@@ -231,6 +231,11 @@ PrefabInstance:
       propertyPath: m_Name
       value: MirrorGameManager
       objectReference: {fileID: 0}
+    - target: {fileID: 1792409360749717995, guid: a14072c4c23ac15498748520f9f744c4,
+        type: 3}
+      propertyPath: sceneId
+      value: 336677499
+      objectReference: {fileID: 0}
     - target: {fileID: 5843814281744733043, guid: a14072c4c23ac15498748520f9f744c4,
         type: 3}
       propertyPath: m_AnchorMin.y

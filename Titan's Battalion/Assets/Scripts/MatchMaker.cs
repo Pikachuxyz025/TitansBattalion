@@ -5,27 +5,55 @@ using Mirror;
 using System;
 using System.Text;
 using System.Security.Cryptography;
+using Random = UnityEngine.Random;
 
 public class MatchMaker : NetworkBehaviour
 {
     public SyncListMatch matches = new SyncListMatch();
-    public SyncListString matchIDs = new SyncListString();
+    public SyncList<string> matchIDs = new SyncList<string>();
+    public SyncList<bool> matchFull = new SyncList<bool>();
+    public SyncList<bool> matchReady = new SyncList<bool>();
 
-    [SerializeField] GameObject turnManagerPrefab;
-    [SerializeField] int maxMatchPlayers = 12;
+    //[SerializeField] GameObject turnManagerPrefab;
+    [SerializeField] int maxMatchPlayers = 2;
     public static MatchMaker instance;
     // Start is called before the first frame update
     void Start()
     {
         instance = this;
+        //DontDestroyOnLoad(this.gameObject);
+    }
+
+    private void Update()
+    {
+        if (isServer)
+            setnReady();
+    }
+
+    void setnReady()
+    {
+        for (int i = 0; i < matches.Count; i++)
+        {
+            matches[i].matchReady = MatchReady(matches[i].matchID);
+            matchReady[i] = matches[i].matchReady;
+        }
+    }
+
+    public Matche AccessMatch(string _matchID)
+    {
+        Matche currentMatch = new Matche();
+        for (int i = 0; i < matches.Count; i++)
+        {
+            if (matches[i].matchID == _matchID)
+            {
+                currentMatch = matches[i];
+            }
+        }
+        return currentMatch;
     }
 
     public void BeginGame(string _matchID)
     {
-        GameObject newTurnManager = Instantiate(turnManagerPrefab);
-        NetworkServer.Spawn(newTurnManager);
-        newTurnManager.GetComponent<NetworkMatchChecker>().matchId = _matchID.ToGuid();
-        TurnManager turnManager = newTurnManager.GetComponent<TurnManager>();
         for (int i = 0; i < matches.Count; i++)
         {
             if (matches[i].matchID == _matchID)
@@ -33,7 +61,6 @@ public class MatchMaker : NetworkBehaviour
                 foreach (var player in matches[i].players)
                 {
                     Player_Mirror _player = player.GetComponent<Player_Mirror>();
-                    //turnManager.AddPlayer(_player);
                     _player.StartGame();
                 }
                 break;
@@ -47,12 +74,13 @@ public class MatchMaker : NetworkBehaviour
         if (!matchIDs.Contains(_matchID))
         {
             matchIDs.Add(_matchID);
-            Matche match = new Matche(_matchID, _player);
-            match.publicMatch = publicMatch;
+            Matche match = new Matche(_matchID, _player, publicMatch);
             matches.Add(match);
             Debug.Log($"Match generated");
             _player.GetComponent<Player_Mirror>().currentMatch = match;
             playerIndex = 1;
+            matchReady.Add(match.matchReady);
+            matchFull.Add(match.fullMatch);
             return true;
         }
         else
@@ -78,7 +106,11 @@ public class MatchMaker : NetworkBehaviour
                         playerIndex = matches[i].players.Count;
 
                         if (matches[i].players.Count == maxMatchPlayers)
+                        {
                             matches[i].fullMatch = true;
+                            matchFull[i] = matches[i].fullMatch;
+                            Debug.Log(matchFull[i]);
+                        }
                         break;
                     }
                     else
@@ -95,10 +127,52 @@ public class MatchMaker : NetworkBehaviour
         }
     }
 
+    public bool MatchReady(string _matchID)
+    {
+        for (int i = 0; i < matches.Count; i++)
+        {
+            if (matches[i].matchID == _matchID)
+            {
+                foreach (GameObject _player in matches[i].players)
+                {
+                    Debug.Log("should be visible");
+                    if (!_player.GetComponent<Player_Mirror>().isReady)
+                        return false;
+                }
+            }
+        }
+        Debug.Log("only shown if thing is true");
+        return true;
+    }
+
+    public bool SetReadyMatch(string _matchID)
+    {
+        for (int i = 0; i < matches.Count; i++)
+        {
+            if (matches[i].matchID == _matchID)
+            {
+                return matchReady[i];
+            }
+        }
+        return false;
+    }
+
+    public bool SetMatchFull(string _matchID)
+    {
+        for (int i = 0; i < matches.Count; i++)
+        {
+            if (matches[i].matchID == _matchID)
+            {
+                return matchFull[i];
+            }
+        }
+        return false;
+    }
     public bool SearchGame(GameObject _player, out int playerIndex, out string _matchID)
     {
         playerIndex = -1;
         _matchID = string.Empty;
+        RandomizeMatches();
         for (int i = 0; i < matches.Count; i++)
         {
             Debug.Log($"Checking match {matches[i].matchID} | inMatch {matches[i].inMatch} | matchFull {matches[i].fullMatch} | publicMatch {matches[i].publicMatch}");
@@ -119,14 +193,25 @@ public class MatchMaker : NetworkBehaviour
         string _id = string.Empty;
         for (int i = 0; i < 5; i++)
         {
-            int random = UnityEngine.Random.Range(0, 36);
+            int random = Random.Range(0, 36);
             if (random < 26)
-                _id += (char)(random * 65);
+                _id += (char)(random + 65);
             else
                 _id += (random - 26).ToString();
         }
         Debug.Log($"Random Match ID: {_id}");
         return _id;
+    }
+
+    public void RandomizeMatches()
+    {
+        for (int i = 0; i < matches.Count; i++)
+        {
+            Matche match = matches[i];
+            int randomIndex = Random.Range(i, matches.Count);
+            matches[i] = matches[randomIndex];
+            matches[randomIndex] = match;
+        }
     }
 
     public void PlayerDisconnected(Player_Mirror player,string _matchID)
@@ -137,13 +222,16 @@ public class MatchMaker : NetworkBehaviour
             {
                 int playerIndex = matches[i].players.IndexOf(player.gameObject);
                 matches[i].players.RemoveAt(playerIndex);
+                matchFull[i] = matches[i].fullMatch;
                 Debug.Log($"Player disconnected from match {_matchID}|{matches[i].players.Count} players remaining");
 
                 if (matches[i].players.Count == 0)
                 {
                     Debug.Log($"No more players in Match. Terminating {_matchID}");
+                    matchFull.RemoveAt(i);
+                    matchReady.RemoveAt(i);
                     matches.RemoveAt(i);
-                    matchIDs.Remove(_matchID);
+                    matchIDs.Remove(_matchID);                    
                 }
                 break;
             }
@@ -155,26 +243,30 @@ public class MatchMaker : NetworkBehaviour
 public class Matche
 {
     public string matchID;
+
     public bool inMatch;
     public bool publicMatch;
+    public bool matchReady;
     public bool fullMatch;
     public SyncListGameObject players = new SyncListGameObject();
 
-    public Matche(string matchID, GameObject player)
+    public Matche(string matchID, GameObject player, bool publicMatch)
     {
+        fullMatch = false;
+        inMatch = false;
         this.matchID = matchID;
+        this.publicMatch = publicMatch;
         players.Add(player);
     }
 
     public Matche() { }
 }
 
-    [System.Serializable]
-    public class SyncListGameObject : SyncList<GameObject> { }
+[System.Serializable]
+public class SyncListGameObject : SyncList<GameObject> { }
 
-    [System.Serializable]
-    public class SyncListMatch : SyncList<Matche> { }
-
+[System.Serializable]
+public class SyncListMatch : SyncList<Matche> { }
 
 public static class MatchExtensions
 {

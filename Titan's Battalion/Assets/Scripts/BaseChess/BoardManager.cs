@@ -23,7 +23,6 @@ public class BoardManager : MonoBehaviour
     private void Start()
     {
         Instance = this;
-        Armies choosenArmies;
         SpawnAllChessmans();
     }
     private void Update()
