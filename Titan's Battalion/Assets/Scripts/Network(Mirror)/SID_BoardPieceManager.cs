@@ -82,7 +82,7 @@ public class SID_BoardPieceManager : MonoBehaviour
     {
         foreach (SID_BoardGridSet gridblock in gridblocksarray)
         {
-            if (gridblock.isFirstPiece)
+            if (gridblock.startingPieceOrigin == BoardStartPoint.IsFirstPiece)
                 orginPiece = gridblock.gameObject;
         }
     }

@@ -24,8 +24,6 @@ public class SID_BoardManager_Mirror : NetworkBehaviour
 
     public List<GameObject> p1chessmanPrefabs, p2chessmanPrefabs, activeChessman;
 
-    public List<GameObject> setpos = new List<GameObject>();
-
     [SyncVar]
     public int playerOneArmy, playerTwoArmy;
 
@@ -56,21 +54,18 @@ public class SID_BoardManager_Mirror : NetworkBehaviour
         aSys = GetComponent<ArmyManager>();
         PieceManager = SID_BoardPieceManager.instance;
         matching = GetComponent<NetworkMatchChecker>().matchId;
-        //buildPos.Callback += UpdatedSetUpBoard;
     }
 
     private void Update()
     {
         if (setActive)
         {
-            //UpdateSelection();
             AccountAllMoves();
             UpdateAllMoves();
             originBoardPiece[2] = PieceManager.orginPiece;
             if (isServer)
                 RpcHightlight();
         }
-        //BuildArmy();
     }
 
     [ClientRpc]
@@ -79,27 +74,6 @@ public class SID_BoardManager_Mirror : NetworkBehaviour
         if (!highlightOn)
             SID_BoardHighlight_Mirror.Instance.HideHighlights();
     }
-
-    //[ClientRpc]
-    /*public void SelectandMove()
-    {
-        Debug.Log("Working: " + connectionToClient);
-        if (selectedChessmanPlayer == null)
-        {
-            //select the chessman
-            if (highlightedChessman != null)
-            {
-                Debug.Log("Come on");
-                ClearMoves();
-                SelectChessman(selectionX, selectionY);
-            }
-        }
-        else
-        {
-            //move the chessman
-            MoveChessman(boardselectionX, boardselectionY);
-        }
-    }*/
 
     public void SelectandMove()
     {
@@ -149,7 +123,6 @@ public class SID_BoardManager_Mirror : NetworkBehaviour
             allMoves[point] = false;
         }
         highlightOn = false;
-        //SID_BoardHighlight_Mirror.Instance.RpcHideHighlights();
     }
     private void AccountAllMoves()
     {
@@ -162,57 +135,6 @@ public class SID_BoardManager_Mirror : NetworkBehaviour
             }
         }
     }
-
-    /*public void MoveChessman(int x, int y)
-    {
-        if (allMoves[new Points(x, y)])
-        {
-            for (int i = 0; i < PieceManager.gridblocksarray.Length; i++)
-            {
-                if (x == PieceManager.gridblocksarray[i].GridX && y == PieceManager.gridblocksarray[i].GridY)
-                {
-                    SID_Chessman_Mirror c = PieceManager.gridblocksarray[i].chessM;
-                    if (c != null && c.isWhite != isWhiteTurn)
-                    {
-                        activeChessman.Remove(c.gameObject);
-                        Destroy(c.gameObject);
-                    }
-                }
-            }
-            selectedChessmanPlayer.transform.position = GetTileCenter(x, y, 2);
-            M_eventmoment.Invoke();
-
-            isWhiteTurn = !isWhiteTurn;
-            highlightOn = false;
-            selectedChessmanPlayer = null;
-        }
-        else
-        {
-            for (int i = 0; i < PieceManager.gridblocksarray.Length; i++)
-            {
-                if (PieceManager.gridblocksarray[i] != null)
-                {
-                    if (x == PieceManager.gridblocksarray[i].GridX && y == PieceManager.gridblocksarray[i].GridY)
-                    {
-                        if (PieceManager.gridblocksarray[i].pieceOn && PieceManager.gridblocksarray[i].chessM.isWhite == isWhiteTurn)
-                        {
-                            highlightOn = false;
-                            selectedChessmanPlayer = PieceManager.gridblocksarray[i].chessM;
-                            allowedMoves = selectedChessmanPlayer.confirmation;
-                            highlightOn = true;
-                            SID_BoardHighlight_Mirror.Instance.HighLightAllowedMoves(allowedMoves);
-                        }
-                    }
-                    else
-                    {
-                        Debug.Log("move not available");
-                        highlightOn = false;
-                        selectedChessmanPlayer = null;
-                    }
-                }
-            }
-        }
-    }*/
 
     public void MoveChessman(int x, int y)
     {
@@ -290,32 +212,12 @@ public class SID_BoardManager_Mirror : NetworkBehaviour
         Debug.Log("is this working at all?");
         if (highlightedChessman != null)
         {
-            //if (isClient)
-            //{
             if (highlightedChessman.hasAuthority)
                 Debug.Log("joy, this is yours");
             else
                 Debug.Log("this is either not yours or this isn't working");
-            // }
         }
     }
-
-    /*public void SelectChessman(int x, int y)
-    {
-        Debug.Log("selection");
-        if (highlightedChessman.isWhite != isWhiteTurn || !hasAuthority)
-        {
-            Debug.Log("not your men to choose");
-            return;
-        }
-        //RpcSetnSelect();
-        selectedChessmanPlayer = highlightedChessman;
-        selectedChesspiece = selectedChessmanPlayer.gameObject;
-
-        allowedMoves = selectedChessmanPlayer.confirmation;
-        highlightOn = true;
-        SID_BoardHighlight_Mirror.Instance.HighLightAllowedMoves(allowedMoves);
-    }*/
 
     public void SelectChessman()
     {
@@ -327,7 +229,6 @@ public class SID_BoardManager_Mirror : NetworkBehaviour
         allowedMoves = selectedChessmanPlayer.confirmedMoves;
         highlightOn = true;
         SID_BoardHighlight_Mirror.Instance.HighLightAllowedMoves(allowedMoves);
-        //CmdHighlighting();
     }
 
     [ClientRpc]
@@ -341,41 +242,6 @@ public class SID_BoardManager_Mirror : NetworkBehaviour
     {
         SID_BoardHighlight_Mirror.Instance.HighLightAllowedMoves(allowedMoves);
     }
-
-
-    /*public void UpdateSelection()
-    {
-        if (!Camera.main)
-            return;
-
-        RaycastHit hit;
-
-        if (Physics.Raycast(Camera.main.ScreenPointToRay(Input.mousePosition), out hit, Mathf.Infinity, LayerMask.GetMask("Pieces")))
-        {
-            SID_Chessman_Mirror sid = hit.collider.GetComponent<SID_Chessman_Mirror>();
-            selectionX = sid.CurrentX;
-            selectionY = sid.CurrentY;
-            highlightedChessman = sid;
-            onBoard = true;
-        }
-        else
-        {
-            highlightedChessman = null;
-            onBoard = false;
-        }
-
-        if (Physics.Raycast(Camera.main.ScreenPointToRay(Input.mousePosition), out hit, Mathf.Infinity, LayerMask.GetMask("ChessPlane")))
-        {
-            SID_BoardGridSet sid = hit.collider.GetComponent<SID_BoardGridSet>();
-            boardselectionX = sid.GridX;
-            boardselectionY = sid.GridY;
-            onBoard = true;
-        }
-        else
-        {
-            onBoard = false;
-        }
-    }*/
 
     public void UpdateSelection()
     {
@@ -416,43 +282,43 @@ public class SID_BoardManager_Mirror : NetworkBehaviour
         }
     }
 
-    public void FixedPositionOne(GameObject yo, Vector3 zoneOne, Vector3 zoneTwo, Vector3 dirOne, Vector3 dirTwo, bool player)
+    public void FixedPositionOne(BoardLocation armyBoard, Vector3 zoneOne, Vector3 zoneTwo, Vector3 dirOne, Vector3 dirTwo, bool LeftorRight)
     {
-        if (yo != null)
+        if (armyBoard != null)
         {
-            if (player)
+            if (LeftorRight)
             {
-                if (yo.transform.position.x > zoneOne.x)
+                if (armyBoard.playerOnePoints[0].transform.position.x > zoneOne.x)
                 {
-                    yo.transform.position += dirOne;
+                    armyBoard.gameObject.transform.position += dirOne;
                 }
             }
             else
             {
-                if (yo.transform.position.x < zoneTwo.x)
+                if (armyBoard.playerOnePoints[1].transform.position.x < zoneTwo.x)
                 {
-                    yo.transform.position += dirTwo;
+                    armyBoard.gameObject.transform.position += dirTwo;
                 }
             }
         }
     }
 
-    public void FixedPositionTwo(GameObject yo, Vector3 zoneOne, Vector3 zoneTwo, Vector3 dirOne, Vector3 dirTwo, bool player)
+    public void FixedPositionTwo(BoardLocation armyBoard, Vector3 zoneOne, Vector3 zoneTwo, Vector3 dirOne, Vector3 dirTwo, bool LeftorRight)
     {
-        if (yo != null)
+        if (armyBoard != null)
         {
-            if (player)
+            if (LeftorRight)
             {
-                if (yo.transform.position.x > zoneOne.x)
+                if (armyBoard.playerTwoPoints[0].transform.position.x < Mathf.Round(zoneOne.x))
                 {
-                    yo.transform.position += dirOne;
+                    armyBoard.gameObject.transform.position += dirTwo;
                 }
             }
             else
             {
-                if (yo.transform.position.x < zoneTwo.x)
+                if (armyBoard.playerTwoPoints[1].transform.position.x > Mathf.Round(zoneTwo.x))
                 {
-                    yo.transform.position += dirTwo;
+                    armyBoard.gameObject.transform.position += dirOne;
                 }
             }
         }
@@ -476,7 +342,6 @@ public class SID_BoardManager_Mirror : NetworkBehaviour
             NetworkServer.Spawn(go, conn);
         }
         go.GetComponent<SID_Chessman_Mirror>().isWhite = iswhite;
-        //go.transform.SetParent(this.transform);
         activeChessman.Add(go);
     }
 

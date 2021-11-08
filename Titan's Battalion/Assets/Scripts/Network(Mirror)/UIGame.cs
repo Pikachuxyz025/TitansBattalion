@@ -1,10 +1,6 @@
 ﻿using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
-using System;
-using Mirror;
 using UnityEngine.UI;
-using UnityEngine.Events;
 
 public class UIGame : MonoBehaviour
 {
@@ -18,12 +14,6 @@ public class UIGame : MonoBehaviour
     [SerializeField] CheckState curKingState;
     [SerializeField] SID_King_Mirror playerKing;
     public PlayerInfo player;
-
-    // Start is called before the first frame update
-    private void Awake()
-    {
-        
-    }
 
     // Update is called once per frame
     void Update()
@@ -81,8 +71,6 @@ public class UIGame : MonoBehaviour
 
     public void RematchIndicationPlayer() => playerReady[1].isOn = false;
     public void NoRematchIndicationPlayer() => playerReady[0].isOn = false;
-    /*public void NoRematchIndicationPlayerTwo() => playerReadyTwo[0].isOn = false;
-    public void RematchIndicationPlayerTwo() => playerReadyTwo[1].isOn = false;*/
 
     public int RematchPlayer()
     {
@@ -134,19 +122,4 @@ public class UIGame : MonoBehaviour
             }
         }
     }
-
-    /*public int RematchPlayerTwo()
-    {
-        int setpiece;
-        setpiece = 0;
-        for (int i = 0; i < playerReadyOne.Length; i++)
-        {
-            if (playerReadyTwo[0].isOn)
-                setpiece = 1;
-            else if (playerReadyTwo[1].isOn)
-                setpiece = -2;
-        }
-        return setpiece;
-    }*/
-
 }
