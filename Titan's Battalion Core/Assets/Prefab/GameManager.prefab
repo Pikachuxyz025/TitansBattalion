@@ -1,0 +1,111 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &3746741280344097780
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3746741280344097781}
+  - component: {fileID: 3746741280344097782}
+  - component: {fileID: 3746741280344097776}
+  - component: {fileID: 3746741280344097783}
+  - component: {fileID: 5545534553349427599}
+  m_Layer: 0
+  m_Name: GameManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &3746741280344097781
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3746741280344097780}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 5.1160636, y: 2.7239895, z: 4.316409}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 0
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &3746741280344097782
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3746741280344097780}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 437bbc0acdbac5243bee147d8c0e1a66, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  chessPieceManager: {fileID: 3746741280344097776}
+  chesGen: {fileID: 3746741280344097783}
+  chessboardManager: {fileID: 0}
+  mainBoardId: 0
+  playerPrefab: {fileID: 5360451695460521378, guid: 0fd41045516b135469e29a1aca06b5f9, type: 3}
+  state: 0
+  tests: []
+--- !u!114 &3746741280344097776
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3746741280344097780}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 41604e5b73e6c7543ad2812ad24e9a1b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  Instanced: {fileID: 3746741280344097776}
+  PointList: []
+  activeChesspieces: []
+--- !u!114 &3746741280344097783
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3746741280344097780}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 326f1054af00e4e458c6d099b4d8db09, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  chessboard: {fileID: 0}
+  piece: {fileID: 3471896705929466035, guid: 768718f4b168b6a45a1864a998f22655, type: 3}
+  pieceManager: {fileID: 3746741280344097776}
+  currentCamera: {fileID: 0}
+  currentlyDragging: {fileID: 0}
+  currentHover:
+    X: 1984987
+    Y: 51684
+  yoffset: 0.2
+  dragOffset: 1.5
+  mainBoardList:
+  - {fileID: 11400000, guid: f22fb077a3a51e94b83ce0134c6a77ea, type: 2}
+--- !u!114 &5545534553349427599
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3746741280344097780}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  GlobalObjectIdHash: 951099334
+  AlwaysReplicateAsRoot: 0
+  DontDestroyWithOwner: 0
+  AutoObjectParentSync: 1
