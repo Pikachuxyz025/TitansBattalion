@@ -51,7 +51,7 @@ public class MatchmakingService
             }
         };
 
-        var allLobbies = await LobbyService.Instance.QueryLobbiesAsync(options);
+        var allLobbies = await Lobbies.Instance.QueryLobbiesAsync(options);
         return allLobbies.Results;
     }
 
@@ -73,7 +73,7 @@ public class MatchmakingService
             }
         };
 
-        _currentLobby = await LobbyService.Instance.CreateLobbyAsync(data.Name, data.MaxPlayers, options);
+        _currentLobby = await Lobbies.Instance.CreateLobbyAsync(data.Name, data.MaxPlayers, options);
 
         Transport.SetHostRelayData(a.RelayServer.IpV4, (ushort)a.RelayServer.Port, a.AllocationIdBytes, a.Key, a.ConnectionData);
 
@@ -85,7 +85,7 @@ public class MatchmakingService
     {
         try
         {
-            await LobbyService.Instance.UpdateLobbyAsync(_currentLobby.Id, new UpdateLobbyOptions { IsLocked = true });
+            await Lobbies.Instance.UpdateLobbyAsync(_currentLobby.Id, new UpdateLobbyOptions { IsLocked = true });
         }
         catch (Exception e)
         {
@@ -98,7 +98,7 @@ public class MatchmakingService
         _heartbeatSource = new CancellationTokenSource();
         while (!_heartbeatSource.IsCancellationRequested && _currentLobby != null)
         {
-            await LobbyService.Instance.SendHeartbeatPingAsync(_currentLobby.Id);
+            await Lobbies.Instance.SendHeartbeatPingAsync(_currentLobby.Id);
             await Task.Delay(HeartbeatInterval * 1000);
         }
     }
@@ -109,7 +109,7 @@ public class MatchmakingService
         await Task.Delay(LobbyRefreshRate * 1000);
         while (!_updateLobbySource.IsCancellationRequested && _currentLobby != null)
         {
-            _currentLobby = await LobbyService.Instance.GetLobbyAsync(_currentLobby.Id);
+            _currentLobby = await Lobbies.Instance.GetLobbyAsync(_currentLobby.Id);
             CurrentLobbyRefreshed?.Invoke(_currentLobby);
             await Task.Delay(LobbyRefreshRate * 1000);
         }
@@ -117,7 +117,7 @@ public class MatchmakingService
 
     public static async Task JoinLobbyWithAllocation(string lobbyId)
     {
-        _currentLobby = await LobbyService.Instance.JoinLobbyByIdAsync(lobbyId);
+        _currentLobby = await Lobbies.Instance.JoinLobbyByIdAsync(lobbyId);
         var a = await RelayService.Instance.JoinAllocationAsync(_currentLobby.Data[Contants.JoinKey].Value);
 
         Transport.SetClientRelayData(a.RelayServer.IpV4, (ushort)a.RelayServer.Port, a.AllocationIdBytes, a.Key, a.ConnectionData, a.HostConnectionData);
@@ -134,7 +134,7 @@ public class MatchmakingService
             try
             {
                 if (_currentLobby.HostId == Authentication.PlayerId) await Lobbies.Instance.DeleteLobbyAsync(_currentLobby.Id);
-                else await LobbyService.Instance.RemovePlayerAsync(_currentLobby.Id, Authentication.PlayerId);
+                else await Lobbies.Instance.RemovePlayerAsync(_currentLobby.Id, Authentication.PlayerId);
                 _currentLobby = null;
             }
             catch (Exception e)

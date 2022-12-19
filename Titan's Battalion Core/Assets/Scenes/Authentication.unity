@@ -1170,7 +1170,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 6830431525977550000, guid: 0f0b43aca4141b149a8a8ed5c98cc5c0, type: 3}
       propertyPath: m_ProtocolType
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6830431525977550001, guid: 0f0b43aca4141b149a8a8ed5c98cc5c0, type: 3}
       propertyPath: m_Name
