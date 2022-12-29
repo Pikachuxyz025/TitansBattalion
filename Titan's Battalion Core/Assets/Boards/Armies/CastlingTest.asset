@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1bafb43c13672b94fb163ad49568b057, type: 3}
+  m_Name: CastlingTest
+  m_EditorClassIdentifier: 
+  tileMaterial: {fileID: 2100000, guid: 80abd1b50ca516a4ca64d0565dcf1147, type: 2}
+  tileCountX: 8
+  tileCountY: 3
+  removedTilePoints: []
+  isArmy: 1
+  tieInArmy: {fileID: 0}
+  ArmyName: 
+  prefabs:
+  - {fileID: 6575477397426356341, guid: 3795c0621b38af745b0af533280f9fcb, type: 3}
+  - {fileID: 1129620202532053857, guid: afaaad9decc1b694a9f47f1e259c1a45, type: 3}
+  - {fileID: 6575477397426356341, guid: 3795c0621b38af745b0af533280f9fcb, type: 3}
+  armyCoordinates:
+  - X: 7
+    Y: 0
+  - X: 4
+    Y: 0
+  - X: 0
+    Y: 0
+  mainBoardTileCountX: 8
+  mainBoardTileCountY: 8
