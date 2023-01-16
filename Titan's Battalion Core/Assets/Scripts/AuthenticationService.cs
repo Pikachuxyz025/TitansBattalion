@@ -9,8 +9,10 @@ using ParrelSync;
 public class Authentication
 {
     public static string PlayerId { get; private set; }
+    public static string PlayerName { get; private set; }
 
-    public static async Task Login()
+
+    public static async Task Login(string username)
     {
         if (UnityServices.State == ServicesInitializationState.Uninitialized)
         {
@@ -21,8 +23,10 @@ public class Authentication
             // Remove this if you don't have ParrelSync installed. 
             // It's used to differentiate the clients, otherwise lobby will count them as the same
             if (ClonesManager.IsClone()) options.SetProfile(ClonesManager.GetArgument());
-            else options.SetProfile("Primary");
+            else options.SetProfile(username);
 #endif
+
+            //options.SetProfile(username);
 
             await UnityServices.InitializeAsync(options);
         }
@@ -31,6 +35,7 @@ public class Authentication
         {
             await AuthenticationService.Instance.SignInAnonymouslyAsync();
             PlayerId = AuthenticationService.Instance.PlayerId;
+            PlayerName = username;
         }
     }
 }

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Unity.Netcode;
 using Unity.Services.Lobbies.Models;
 using UnityEngine;
@@ -18,6 +19,8 @@ public class LobbyOrchestrator : NetworkBehaviour
     [SerializeField] private RoomScreen _roomScreen;
     [SerializeField] private DataSend dataSend;
 
+    [SerializeField] ulong currentPlayerId;
+    [SerializeField] private string currentPlayerName;
     private void Start()
     {
         _mainLobbyScreen.gameObject.SetActive(true);
@@ -31,12 +34,15 @@ public class LobbyOrchestrator : NetworkBehaviour
 
 
         NetworkObject.DestroyWithScene = true;
+        currentPlayerName = Authentication.PlayerName;
+        //Debug.Log(currentPlayerName);
     }
 
 
 
     #region Main Lobby
 
+    // Join Lobby Here
     private async void OnLobbySelected(Lobby lobby)
     {
         using (new Load("Joining Lobby..."))
@@ -94,7 +100,8 @@ public class LobbyOrchestrator : NetworkBehaviour
     #region Room
 
     private readonly Dictionary<ulong, bool> _playersInLobby = new();
-    public static event Action<Dictionary<ulong, bool>> LobbyPlayersUpdated;
+    private readonly Dictionary<ulong,string> _playerLobbyNames = new();
+    public static event Action<Dictionary<ulong, bool>,Dictionary<ulong,string>> LobbyPlayersUpdated;
     private float _nextLobbyUpdate;
 
     public override void OnNetworkSpawn()
@@ -103,20 +110,22 @@ public class LobbyOrchestrator : NetworkBehaviour
         {
             NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnectedCallback;
             _playersInLobby.Add(NetworkManager.Singleton.LocalClientId, false);
+            _playerLobbyNames.Add(NetworkManager.Singleton.LocalClientId, Authentication.PlayerName);
             UpdateInterface();
         }
-
+        currentPlayerId = NetworkManager.Singleton.LocalClientId;
+        AddServerRpc(currentPlayerId,currentPlayerName);
         // Client uses this in case host destroys the lobby
         NetworkManager.Singleton.OnClientDisconnectCallback += OnClientDisconnectCallback;
-
-
     }
 
     private void OnClientConnectedCallback(ulong playerId)
     {
         if (!IsServer) return;
-
+        Debug.Log(playerId);
         // Add locally
+
+
         if (!_playersInLobby.ContainsKey(playerId)) _playersInLobby.Add(playerId, false);
 
         PropagateToClients();
@@ -124,18 +133,30 @@ public class LobbyOrchestrator : NetworkBehaviour
         UpdateInterface();
     }
 
+    [ServerRpc(RequireOwnership = false)]
+    void AddServerRpc(ulong player, string name)
+    {
+        Debug.Log("Current client " + player + " " + name);
+        if (!_playerLobbyNames.ContainsKey(player)) _playerLobbyNames.Add(player, name);
+    }
+
     private void PropagateToClients()
     {
-        foreach (var player in _playersInLobby) UpdatePlayerClientRpc(player.Key, player.Value);
+        foreach (var player in _playersInLobby) UpdatePlayerClientRpc(player.Key, player.Value, _playerLobbyNames[player.Key]);
     }
 
     [ClientRpc]
-    private void UpdatePlayerClientRpc(ulong clientId, bool isReady)
+    private void UpdatePlayerClientRpc(ulong clientId, bool isReady,string playerName)
     {
         if (IsServer) return;
 
         if (!_playersInLobby.ContainsKey(clientId)) _playersInLobby.Add(clientId, isReady);
         else _playersInLobby[clientId] = isReady;
+
+       //Debug.Log(currentPlayerName);
+        if (!_playerLobbyNames.ContainsKey(clientId)) _playerLobbyNames.Add(clientId, playerName);
+        else _playerLobbyNames[clientId] = playerName;
+
         UpdateInterface();
     }
 
@@ -145,7 +166,7 @@ public class LobbyOrchestrator : NetworkBehaviour
         {
             // Handle locally
             if (_playersInLobby.ContainsKey(playerId)) _playersInLobby.Remove(playerId);
-
+            if (_playerLobbyNames.ContainsKey(playerId)) _playerLobbyNames.Remove(playerId);
             // Propagate all clients
             RemovePlayerClientRpc(playerId);
 
@@ -166,6 +187,7 @@ public class LobbyOrchestrator : NetworkBehaviour
         if (IsServer) return;
 
         if (_playersInLobby.ContainsKey(clientId)) _playersInLobby.Remove(clientId);
+        if (_playerLobbyNames.ContainsKey(clientId)) _playerLobbyNames.Remove(clientId);
         UpdateInterface();
     }
 
@@ -192,7 +214,7 @@ public class LobbyOrchestrator : NetworkBehaviour
 
     private void UpdateInterface()
     {
-        LobbyPlayersUpdated?.Invoke(_playersInLobby);
+        LobbyPlayersUpdated?.Invoke(_playersInLobby,_playerLobbyNames);
     }
 
     private async void OnLobbyLeft()
@@ -200,6 +222,7 @@ public class LobbyOrchestrator : NetworkBehaviour
         using (new Load("Leaving Lobby..."))
         {
             _playersInLobby.Clear();
+            _playerLobbyNames.Clear();
             NetworkManager.Singleton.Shutdown();
             await MatchmakingService.LeaveLobby();
         }

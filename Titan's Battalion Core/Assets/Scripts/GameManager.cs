@@ -44,19 +44,14 @@ public class GameManager : NetworkBehaviour
 
     public override void OnDestroy()
     {
-        base.OnDestroy();
-        if (!isRestarting)
+        //base.OnDestroy();
+        /*if (!isRestarting)
         {
             MatchmakingService.LeaveLobby();
             if (NetworkManager.Singleton != null) NetworkManager.Singleton.Shutdown();
-        }
-        //else
-        //{
-        //    mainBoardId = DataSend.mainBoardId;
-        //    Destroy(DataSend.instance.gameObject);
-        //    CreateSendDataServerRpc();
-        //}
+        }*/
     }
+
     [ServerRpc]
     void CreateSendDataServerRpc()
     {
@@ -77,7 +72,8 @@ public class GameManager : NetworkBehaviour
         var spawn = Instantiate(playerPrefab);
 
         ChessGen_Test chessGen = spawn.GetComponent<ChessGen_Test>();
-        playerList.Insert((int)playerId, chessGen);
+        playerList.Add(chessGen);
+        chessGen.teamNumber.Value = playerList.IndexOf(chessGen) + 1;
         chessGen.pieceManager = chessPieceManager;
         chessGen.boardGenerator = chesGen;
         spawn.NetworkObject.SpawnWithOwnership(playerId);

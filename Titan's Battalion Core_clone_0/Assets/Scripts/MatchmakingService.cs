@@ -2,10 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Unity.Netcode;
 using Unity.Netcode.Transports.UTP;
+using Unity.Networking.Transport.Relay;
 using Unity.Services.Lobbies;
 using Unity.Services.Lobbies.Models;
 using Unity.Services.Relay;
+using Unity.Services.Relay.Models;
 using UnityEngine;
 using Object = UnityEngine.Object;
 public class MatchmakingService
@@ -58,24 +61,22 @@ public class MatchmakingService
     public static async Task CreateLobbyWithAllocation(LobbyData data)
     {
         // Create a relay allocation and generate a join code to share with the lobby
-        var a = await RelayService.Instance.CreateAllocationAsync(data.MaxPlayers);
-        var joinCode = await RelayService.Instance.GetJoinCodeAsync(a.AllocationId);
+       Allocation a = await RelayService.Instance.CreateAllocationAsync(data.MaxPlayers);
+        string joinCode = await RelayService.Instance.GetJoinCodeAsync(a.AllocationId);
 
         // Create a lobby, adding the relay join code to the lobby data
-        var options = new CreateLobbyOptions
+        CreateLobbyOptions options = new CreateLobbyOptions
         {
             Data = new Dictionary<string, DataObject> {
                 { Contants.JoinKey, new DataObject(DataObject.VisibilityOptions.Member, joinCode) },
-                { Contants.GameTypeKey, new DataObject(DataObject.VisibilityOptions.Public, data.MainBoard.ToString(), DataObject.IndexOptions.N1) }/*, {
-                    Contants.DifficultyKey,
-                    new DataObject(DataObject.VisibilityOptions.Public, data.ArmyBoard.ToString(), DataObject.IndexOptions.N2)
-                }*/
+                { Contants.GameTypeKey, new DataObject(DataObject.VisibilityOptions.Public, data.MainBoard.ToString(), DataObject.IndexOptions.N1) }
             }
         };
 
         _currentLobby = await Lobbies.Instance.CreateLobbyAsync(data.Name, data.MaxPlayers, options);
-
-        Transport.SetHostRelayData(a.RelayServer.IpV4, (ushort)a.RelayServer.Port, a.AllocationIdBytes, a.Key, a.ConnectionData);
+        RelayServerData relayServerData = new RelayServerData(a, "dtls");
+        Transport.SetRelayServerData(relayServerData);
+        //Transport.SetHostRelayData(a.RelayServer.IpV4, (ushort)a.RelayServer.Port, a.AllocationIdBytes, a.Key, a.ConnectionData);
 
         Heartbeat();
         PeriodicallyRefreshLobby();
@@ -118,9 +119,12 @@ public class MatchmakingService
     public static async Task JoinLobbyWithAllocation(string lobbyId)
     {
         _currentLobby = await Lobbies.Instance.JoinLobbyByIdAsync(lobbyId);
-        var a = await RelayService.Instance.JoinAllocationAsync(_currentLobby.Data[Contants.JoinKey].Value);
+        JoinAllocation a = await RelayService.Instance.JoinAllocationAsync(_currentLobby.Data[Contants.JoinKey].Value);
 
-        Transport.SetClientRelayData(a.RelayServer.IpV4, (ushort)a.RelayServer.Port, a.AllocationIdBytes, a.Key, a.ConnectionData, a.HostConnectionData);
+
+        RelayServerData relayServerData = new RelayServerData(a, "dtls");
+        Transport.SetRelayServerData(relayServerData);
+        //Transport.SetClientRelayData(a.RelayServer.IpV4, (ushort)a.RelayServer.Port, a.AllocationIdBytes, a.Key, a.ConnectionData, a.HostConnectionData);
 
         PeriodicallyRefreshLobby();
     }
@@ -134,7 +138,12 @@ public class MatchmakingService
             try
             {
                 if (_currentLobby.HostId == Authentication.PlayerId) await Lobbies.Instance.DeleteLobbyAsync(_currentLobby.Id);
-                else await Lobbies.Instance.RemovePlayerAsync(_currentLobby.Id, Authentication.PlayerId);
+                else
+                {
+                    await Lobbies.Instance.RemovePlayerAsync(_currentLobby.Id, Authentication.PlayerId);
+                    Debug.Log(_currentLobby.Players.Count);
+                }
+
                 _currentLobby = null;
             }
             catch (Exception e)
@@ -142,4 +151,7 @@ public class MatchmakingService
                 Debug.Log(e);
             }
     }
+
+
+
 }

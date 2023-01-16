@@ -48,8 +48,7 @@ public class Chesspiece : NetworkBehaviour
     [HideInInspector] public List<Points> addedPoints;
     [SerializeField] protected List<Points> specialPoints = new List<Points>();
     [SerializeField] protected List<Points> firstMovePoints = new List<Points>();
-    public SpecialMove specialMove=SpecialMove.None;
-
+    public SpecialMove specialMove = SpecialMove.None;
 
     private void Awake()
     {

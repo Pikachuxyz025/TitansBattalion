@@ -64,13 +64,14 @@ public class RoomScreen : MonoBehaviour
         LobbyLeft?.Invoke();
     }
 
-    private void NetworkLobbyPlayersUpdated(Dictionary<ulong, bool> players)
+    private void NetworkLobbyPlayersUpdated(Dictionary<ulong, bool> players,Dictionary<ulong,string>playerNames)
     {
         var allActivePlayerIds = players.Keys;
 
         // Remove all inactive panels
-        var toDestroy = _playerPanels.Where(p => !allActivePlayerIds.Contains(p.PlayerId)).ToList();
-        foreach (var panel in toDestroy)
+       List<LobbyPlayerPanel> toDestroy = _playerPanels.Where(p => !allActivePlayerIds.Contains(p.PlayerId)).ToList();
+       
+        foreach (LobbyPlayerPanel panel in toDestroy)
         {
             _playerPanels.Remove(panel);
             Destroy(panel.gameObject);
@@ -78,15 +79,16 @@ public class RoomScreen : MonoBehaviour
 
         foreach (var player in players)
         {
-            var currentPanel = _playerPanels.FirstOrDefault(p => p.PlayerId == player.Key);
+            LobbyPlayerPanel currentPanel = _playerPanels.FirstOrDefault(p => p.PlayerId == player.Key);
             if (currentPanel != null)
             {
                 if (player.Value) currentPanel.SetReady();
             }
             else
             {
-                var panel = Instantiate(_playerPanelPrefab, _playerPanelParent);
-                panel.Init(player.Key);
+                LobbyPlayerPanel panel = Instantiate(_playerPanelPrefab, _playerPanelParent);
+                if (playerNames.ContainsKey(player.Key))
+                    panel.InitializePlayerPanel(player.Key, playerNames[player.Key]);
                 _playerPanels.Add(panel);
             }
         }

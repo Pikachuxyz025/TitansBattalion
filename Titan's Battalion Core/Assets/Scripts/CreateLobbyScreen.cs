@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 public struct LobbyData
 {
@@ -22,11 +23,13 @@ public class CreateLobbyScreen : MonoBehaviour
 {
     [SerializeField] private TMP_InputField _nameInput, _maxPlayersInput;
     [SerializeField] private TMP_Dropdown armyBoardDropdown, mainBoardDropdown;
-
+    [SerializeField] private Slider slider;
+    [SerializeField] private TextMeshProUGUI sliderText;
     public static event Action<LobbyData> LobbyCreated;
 
     private void Start()
     {
+        slider.onValueChanged.AddListener((v) => sliderText.text = v.ToString("0"));
         SetOptions(mainBoardDropdown, Contants.MainBoards);
         void SetOptions(TMP_Dropdown dropdown, IEnumerable<string> values)
         {
@@ -39,7 +42,7 @@ public class CreateLobbyScreen : MonoBehaviour
         var lobbyData = new LobbyData
         {
             Name = _nameInput.text,
-            MaxPlayers = int.Parse(_maxPlayersInput.text),
+            MaxPlayers = (int)slider.value, //int.Parse(_maxPlayersInput.text),
             MainBoard = mainBoardDropdown.value,
         };
 

@@ -9,8 +9,6 @@ public class DataSend:NetworkBehaviour
     public static DataSend instance;
     public override void OnNetworkSpawn()
     {
-        Debug.Log(mainBoardId);
         instance = this;
-
     }
 }
