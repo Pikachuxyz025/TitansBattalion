@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using UnityEngine;
 using Unity.Netcode;
 
-public class DataSend:NetworkBehaviour
+public class DataSend : NetworkBehaviour
 {
-    public static int mainBoardId = 0;
+    public static GameMode boardData=GameMode.None;
     public static DataSend instance;
     public override void OnNetworkSpawn()
     {

@@ -16,6 +16,15 @@ MonoBehaviour:
   tileCountX: 10
   tileCountY: 2
   removedTilePoints: []
+  TileEdgedPoints:
+  - X: 0
+    Y: 0
+  - X: 9
+    Y: 0
+  - X: 0
+    Y: 1
+  - X: 9
+    Y: 1
   isArmy: 0
   tieInArmy: {fileID: 0}
   ArmyName: 

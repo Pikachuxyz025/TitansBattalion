@@ -10,51 +10,62 @@ public enum SetMode
 {
     SelectArmy,
     NotSpawned,
+    FlipMode,
     Spawned,
     Set,
     GameOver,
 }
 
 
+
 public class ChessGen_Test : ChessGenerator, IMainBoardInfo
 {
-    // Movement for pieces
-    public ChessPieceManager pieceManager;
-    public ChessboardGenerator boardGenerator;
+    [Header("Editor Filled Variables")]
+   [SerializeField] private ChessPieceManager pieceManager;
+    [SerializeField] private ChessboardGenerator boardGenerator;
+    [SerializeField] private GameManager gameManager;
+    [SerializeField] private GameObject playerUI;
+    [SerializeField] private GameObject winScreen;
+    [SerializeField] private TextMeshProUGUI whoWin;
+    [SerializeField] private TMP_Dropdown dropdown;
+    [SerializeField] private GameObject checkmateButton;
     [SerializeField] private List<Chessboard_Testing> armyBoardList = new List<Chessboard_Testing>();
+    [SerializeField] private float yoffset = .2f;
+    [SerializeField] private float dragOffset = 1.5f;
+
+    [Header("board check")]
+    [SerializeField] private GameModeTerritory gameModeTerritory = new GameModeTerritory();
+
+    [Header("Script Filled Variables")]
+    [SerializeField] private Points[] armyEdgedPoints;
+    [SerializeField] private ChessPieceConnection[] armyEdgedobjects;
 
     [SerializeField] private Camera currentCamera;
     [SerializeField] private Chesspiece currentlyDragging;
     [SerializeField] private Points currentHover = new Points(1984987, 51684);
-    [SerializeField] private float yoffset = .2f;
-    [SerializeField] private float dragOffset = 1.5f;
+
     [SerializeField] private List<Points> availableMoves = new List<Points>();
     [SerializeField] private List<Points> availableSpecialMoves = new List<Points>();
 
+    [SerializeField] private List<GameObject> spawnedObject = new List<GameObject>();
+    [SerializeField] private List<ChessPieceConnection> connections = new List<ChessPieceConnection>();
+
 
     public NetworkVariable<int> teamNumber = new NetworkVariable<int>(0);
-    public List<GameObject> spawnedObject = new List<GameObject>();
-
     [SerializeField] private int mainBoardOffsetX;
     [SerializeField] private int mainBoardOffsetY;
 
-    public TMP_Dropdown dropdown;
-    public List<ChessPieceConnection> connections = new List<ChessPieceConnection>();
 
-    public GameManager gameManager;
-    public GameObject winScreen;
-    public TextMeshProUGUI whoWin;
-    [SerializeField] Toggle retryToggle;
     public NetworkVariable<bool> retryBool = new NetworkVariable<bool>(false);
     public NetworkVariable<bool> endBool = new NetworkVariable<bool>(false);
-    public King currentKing;
-    public bool inCheck;
-    [SerializeField] private GameObject checkmateButton;
+    private King currentKing;
+
 
     [SerializeField] private bool setCurrentDrag = false;
     [SerializeField] private Vector3[] setCameraTransform;
     [SerializeField] private Vector3[] setCameraRotation;
     public NetworkVariable<SetMode> currentSetModeNet = new NetworkVariable<SetMode>(SetMode.SelectArmy);
+    public NetworkVariable<GameMode> currentGameMode = new NetworkVariable<GameMode>(GameMode.None);
 
     public NetworkVariable<bool> isMyTurnNet = new NetworkVariable<bool>(false);
     private bool isMyTurn
@@ -74,34 +85,12 @@ public class ChessGen_Test : ChessGenerator, IMainBoardInfo
         }
     }
 
-    public override void OnNetworkSpawn()
+    public void SetupVariables(GameMode _mode, int _teamNumber, ChessPieceManager _pieceManager, ChessboardGenerator _chessGen)
     {
-        //teamNumber.Value = Convert.ToInt32(OwnerClientId) + 1;
-        SetBoardGeneratorServerRpc();
-        Setupd();
-    }
-
-    [ServerRpc(RequireOwnership = false)]
-    public void SetBoardGeneratorServerRpc() => boardGenerator.ChangeValue += InsertMainBoardInfo;
-
-
-    [ServerRpc(RequireOwnership = false)]
-    public void ChangeRetyBoolServerRpc(bool value)
-    {
-        retryBool.Value = value;
-        gameManager.GameRestart();
-    }
-
-    [ServerRpc(RequireOwnership = false)]
-    public void ChangeEndBoolServerRpc(bool value)
-    {
-        endBool.Value = value;
-        gameManager.GameEnd();
-    }
-
-    private void Setupd()
-    {
-        gameManager = FindObjectOfType<GameManager>();
+        currentGameMode.Value = _mode;
+        teamNumber.Value = _teamNumber;
+        pieceManager = _pieceManager;
+        boardGenerator = _chessGen;
     }
 
     // Update is called once per frame
@@ -142,30 +131,204 @@ public class ChessGen_Test : ChessGenerator, IMainBoardInfo
     }
 
     #region Starting The Game
-    #endregion
 
-
-
-    public void SetupTerritory()
+    public override void OnNetworkSpawn()
     {
-        if (armyBoardList.Count >= dropdown.value && dropdown.value != 0)
-        {
-            //Debug.Log("There shouldn't be an error " + armyBoardList.Count + " : " + uiManager.armySelection.value);
+        SetBoardGeneratorServerRpc();
+        Setupd();
 
-            SetChessIdServerRpc(dropdown.value - 1);
+        if (currentGameMode.Value == GameMode.None)
+            return;
+        
+
+        if (currentGameMode.Value != GameMode.Chess)
+        {
+            if (IsOwner)
+                playerUI.SetActive(true);
         }
         else
+        {
+            SetChessIdServerRpc(currentGameMode.Value);
+            SetModeChangeServerRpc(SetMode.NotSpawned);
+        }
+
+    }
+
+    [ServerRpc(RequireOwnership = false)] // Sets up event for changing mainboardOffset
+    public void SetBoardGeneratorServerRpc() => boardGenerator.ChangeValue += InsertMainBoardInfo;
+
+    // Finds the gamemanager in scene (Server only)
+    private void Setupd() => gameManager = FindObjectOfType<GameManager>();
+
+    // Takes the dropdown value of the armyboard list and selects territory
+    // Attached to button press in game
+    public void SetupTerritory()
+    {
+        if (armyBoardList.Count >= dropdown.value)
+            SetChessIdServerRpc(dropdown.value);
+        else
             return;
+
         if (IsOwner)
             SetModeChangeServerRpc(SetMode.NotSpawned);
-        //currentSetMode = SetMode.NotSpawned;
     }
 
     [ServerRpc(RequireOwnership = false)]
     void SetChessIdServerRpc(int id)
     {
+        Debug.Log(id);
         chessboard = armyBoardList[id];
+        armyEdgedPoints = chessboard.TileEdgedPoints;
+        armyEdgedobjects = new ChessPieceConnection[armyEdgedPoints.Length];
     }
+
+    [ServerRpc(RequireOwnership = false)]
+    void SetChessIdServerRpc(GameMode mode)
+    {
+        chessboard = gameModeTerritory.GetTerritory(mode);
+        armyEdgedPoints = chessboard.TileEdgedPoints;
+        armyEdgedobjects = new ChessPieceConnection[armyEdgedPoints.Length];
+    }
+
+    [ServerRpc]
+    public void PositionAllPiecesServerRpc()
+    {
+        if (spawnedObject.Count != chessboard.prefabs.Count)
+        {
+            //Debug.Log("Set is off");
+            return;
+        }
+        King king = null;
+
+        for (int i = 0; i < spawnedObject.Count; i++)
+        {
+            Points setPoint = chessboard.armyCoordinates[i];
+            GameObject setobject = spawnedObject[i];
+
+            if (setobject.GetComponent<Chesspiece>() is King)
+                king = setobject.GetComponent<King>();
+
+            if (setupTiles.ContainsKey(setPoint))
+            {
+                //Debug.Log("set Found " + setPoint.X + ", " + setPoint.Y);
+
+                Chesspiece cp = setobject.GetComponent<Chesspiece>();
+                ChessPieceConnection tp = setupTiles[setPoint].GetComponent<ChessPieceConnection>();
+                Vector3 pos = tp.pieceSetPoint.transform.position;
+                cp.SetPositionServerRpc(tp.GridX.Value, tp.GridY.Value, pos, true);
+                cp.gameObject.GetComponent<NetworkObject>().ChangeOwnership(OwnerClientId);
+                tp.SetOccupiedPieceClientRpc(cp.GetComponent<NetworkObject>());
+                //PositionSinglePiece(setobject, setupTiles[setPoint], true);
+            }
+        }
+
+        AssignRookToKing(king);
+    }
+
+    void AssignRookToKing(King king)
+    {
+        if (king == null) return;
+
+        currentKing = king;
+
+        foreach (GameObject _object in spawnedObject)
+        {
+            if (_object.GetComponent<Chesspiece>() is Rook)
+            {
+                Rook rook = _object.GetComponent<Rook>();
+                king.rooks.Add(rook);
+                rook.SetKing(king);
+            }
+        }
+    }
+    #endregion
+
+    #region Ending The Game
+
+    [ServerRpc(RequireOwnership = false)]
+    public void ChangeRetyBoolServerRpc(bool value)
+    {
+        retryBool.Value = value;
+        gameManager.GameRestart();
+    }
+
+    [ServerRpc(RequireOwnership = false)]
+    public void ChangeEndBoolServerRpc(bool value)
+    {
+        endBool.Value = value;
+        gameManager.GameEnd();
+    }
+
+
+    [ServerRpc(RequireOwnership = false)]
+    public void ActiveCheckMateServerRpc()
+    {
+        ClientRpcParams clientRpcParams;
+
+        clientRpcParams = new ClientRpcParams
+        {
+            Send = new ClientRpcSendParams
+            {
+
+                TargetClientIds = new ulong[] { OwnerClientId }
+            }
+        };
+
+        if (currentKing == null)
+            return;
+        if (currentKing.CompleteKingCheckmate())
+        {
+            gameManager.CheckGameOver(this);
+            return;
+        }
+
+        if (currentKing.IsInCheck())
+            ActivateCheckmateButtonClientRpc(true, clientRpcParams);
+        else
+            ActivateCheckmateButtonClientRpc(false, clientRpcParams);
+
+    }
+
+    [ClientRpc]
+    public void ActivateCheckmateButtonClientRpc(bool set, ClientRpcParams clientRpc = default) => checkmateButton.SetActive(set);
+
+    public void RemoveChessPieces()
+    {
+        for (int i = 0; i < spawnedObject.Count; i++)
+        {
+            GameObject pm = spawnedObject[i];
+            spawnedObject[i] = null;
+            Destroy(pm);
+        }
+        List<Points> listd = new List<Points>(setupTiles.Keys);
+        for (int i = 0; i < listd.Count; i++)
+        {
+            GameObject gm = setupTiles[listd[i]];
+            setupTiles[listd[i]] = null;
+            Destroy(gm);
+        }
+    }
+
+    [ServerRpc]
+    public void OnCheckMateServerRpc()
+    {
+        gameManager.CheckGameOver(this);
+    }
+
+    [ClientRpc]
+    public void CheckMateClientRpc(int team)
+    {
+        if (IsOwner)
+            DisplayVictory(team);
+    }
+
+    private void DisplayVictory(int winningTeam)
+    {
+        checkmateButton.gameObject.SetActive(false);
+        winScreen.SetActive(true);
+        whoWin.text = new string("Player " + winningTeam + " Wins!");
+    }
+    #endregion
 
 
 
@@ -178,6 +341,7 @@ public class ChessGen_Test : ChessGenerator, IMainBoardInfo
                 {
                     // Debugging based on player number
                     GenerateAllTilesServerRpc(teamNumber.Value);
+
                     SetModeChangeServerRpc(SetMode.Spawned);
                     //currentSetMode = SetMode.Spawned;
                 }
@@ -205,10 +369,7 @@ public class ChessGen_Test : ChessGenerator, IMainBoardInfo
     }
 
     [ServerRpc(RequireOwnership = false)]
-    private void SetModeChangeServerRpc(SetMode set)
-    {
-        currentSetModeNet.Value = set;
-    }
+    private void SetModeChangeServerRpc(SetMode set) => currentSetModeNet.Value = set;
 
     void MoveChessboard()
     {
@@ -230,27 +391,37 @@ public class ChessGen_Test : ChessGenerator, IMainBoardInfo
         switch (teamNumber.Value)
         {
             case 1:
-                gameObject.transform.position += Vector3.right;
+                // if boardedge d > armyedge a
 
-                foreach (ChessPieceConnection connection in connections)
+                if (gameManager.GetMainBoard().TileEdgedPoints[3].X > armyEdgedobjects[0].CurrentTilePoint().X)
                 {
-                    // Change the alter grid movement for each player.
-                    connection.AlterGrid(1, 0);
-                    //connection.AlterGridClientRpc(1, 0);
+                    gameObject.transform.position += Vector3.right;
+
+                    foreach (ChessPieceConnection connection in connections)
+                    {
+                        // Change the alter grid movement for each player.
+                        connection.AlterGrid(1, 0);
+                        //connection.AlterGridClientRpc(1, 0);
+                    }
                 }
-                break;
+                    break;
+                
             case 2:
-                gameObject.transform.position += Vector3.left;
-
-                foreach (ChessPieceConnection connection in connections)
+                // if boardedge a < armyedge a
+                if (gameManager.GetMainBoard().TileEdgedPoints[0].X < armyEdgedobjects[0].CurrentTilePoint().X)
                 {
-                    // Change the alter grid movement for each player.
-                    connection.AlterGrid(-1, 0);
-                    //connection.AlterGridClientRpc(-1, 0);
+                    gameObject.transform.position += Vector3.left;
+
+                    foreach (ChessPieceConnection connection in connections)
+                    {
+                        // Change the alter grid movement for each player.
+                        connection.AlterGrid(-1, 0);
+                        //connection.AlterGridClientRpc(-1, 0);
+                    }
                 }
                 break;
             case 3:
-                gameObject.transform.position += Vector3.back;
+                    gameObject.transform.position += Vector3.back;
 
                 foreach (ChessPieceConnection connection in connections)
                 {
@@ -271,40 +442,39 @@ public class ChessGen_Test : ChessGenerator, IMainBoardInfo
                 break;
         }
     }
+
     [ServerRpc]
     void ControlDServerRpc()
     {
         // Adjust the X and Y of the coordinates
         switch (teamNumber.Value)
         {
-            case 2:
-                gameObject.transform.position += Vector3.right;
-
-                foreach (ChessPieceConnection connection in connections)
-                {
-                    // Change the alter grid movement for each player.
-                    connection.AlterGrid(1, 0);
-                    //.AlterGridClientRpc(1, 0);
-                }
-                break;
             case 1:
-                gameObject.transform.position += Vector3.left;
-
-                foreach (ChessPieceConnection connection in connections)
+                // if boardedge c < armyedge b
+                if (gameManager.GetMainBoard().TileEdgedPoints[2].X < armyEdgedobjects[1].CurrentTilePoint().X)
                 {
-                    // Change the alter grid movement for each player.
-                    connection.AlterGrid(-1, 0);
-                    //connection.AlterGridClientRpc(-1, 0);
+                    gameObject.transform.position += Vector3.left;
+
+                    foreach (ChessPieceConnection connection in connections)
+                    {
+                        // Change the alter grid movement for each player.
+                        connection.AlterGrid(-1, 0);
+                        //connection.AlterGridClientRpc(-1, 0);
+                    }
                 }
                 break;
-            case 4:
-                gameObject.transform.position += Vector3.back;
-
-                foreach (ChessPieceConnection connection in connections)
+            case 2:
+                // if boardedge b > armyedge b
+                if (gameManager.GetMainBoard().TileEdgedPoints[1].X > armyEdgedobjects[1].CurrentTilePoint().X)
                 {
-                    // Change the alter grid movement for each player.
-                    connection.AlterGrid(0, -1);
-                    //connection.AlterGridClientRpc(0, -1);
+                    gameObject.transform.position += Vector3.right;
+
+                    foreach (ChessPieceConnection connection in connections)
+                    {
+                        // Change the alter grid movement for each player.
+                        connection.AlterGrid(1, 0);
+                        //.AlterGridClientRpc(1, 0);
+                    }
                 }
                 break;
             case 3:
@@ -317,7 +487,21 @@ public class ChessGen_Test : ChessGenerator, IMainBoardInfo
                     //connection.AlterGridClientRpc(0, 1);
                 }
                 break;
+            case 4:
+                gameObject.transform.position += Vector3.back;
+
+                foreach (ChessPieceConnection connection in connections)
+                {
+                    // Change the alter grid movement for each player.
+                    connection.AlterGrid(0, -1);
+                    //connection.AlterGridClientRpc(0, -1);
+                }
+                break;
         }
+    }
+    bool IsBoardWithinFrame(int x, int y)
+    {
+        return x < y;
     }
 
     public void InsertMainBoardInfo(int x, int y)
@@ -356,15 +540,6 @@ public class ChessGen_Test : ChessGenerator, IMainBoardInfo
         }
     }
 
-    [ClientRpc]
-    void SpawnObjectClientRpc(NetworkObjectReference target)
-    {
-        if (target.TryGet(out NetworkObject targetObject))
-        {
-            spawnedObject.Add(targetObject.gameObject);
-        }
-    }
-
     public GameObject SpawnSinglePiece(GameObject reference)
     {
         GameObject _spawnedObject = Instantiate(reference);
@@ -378,85 +553,6 @@ public class ChessGen_Test : ChessGenerator, IMainBoardInfo
         chessboard = chess;
     }
 
-    [ServerRpc]
-    public void PositionAllPiecesServerRpc()
-    {
-        if (spawnedObject.Count != chessboard.prefabs.Count)
-        {
-            //Debug.Log("Set is off");
-            return;
-        }
-        King king = null;
-
-        for (int i = 0; i < spawnedObject.Count; i++)
-        {
-            Points setPoint = chessboard.armyCoordinates[i];
-            GameObject setobject = spawnedObject[i];
-
-            if (setobject.GetComponent<Chesspiece>() is King)
-                king = setobject.GetComponent<King>();
-
-            if (setupTiles.ContainsKey(setPoint))
-            {
-                //Debug.Log("set Found " + setPoint.X + ", " + setPoint.Y);
-
-                Chesspiece cp = setobject.GetComponent<Chesspiece>();
-                ChessPieceConnection tp = setupTiles[setPoint].GetComponent<ChessPieceConnection>();
-                Vector3 pos = tp.pieceSetPoint.transform.position;
-                cp.SetPositionServerRpc(tp.GridX.Value, tp.GridY.Value, pos, true);
-                cp.gameObject.GetComponent<NetworkObject>().ChangeOwnership(OwnerClientId);
-                tp.SetOccupiedPieceClientRpc(cp.GetComponent<NetworkObject>());
-                //PositionSinglePiece(setobject, setupTiles[setPoint], true);
-            }
-        }
-
-        AssignRookToKing(king);
-    }
-
-
-    void AssignRookToKing(King king)
-    {
-        if (king == null) return;
-
-        currentKing = king;
-
-        foreach (GameObject _object in spawnedObject)
-        {
-            if (_object.GetComponent<Chesspiece>() is Rook)
-            {
-                Rook rook = _object.GetComponent<Rook>();
-                king.rooks.Add(rook);
-                rook.SetKing(king);
-            }
-        }
-    }
-
-    [ServerRpc(RequireOwnership = false)]
-    public void ActiveCheckMateServerRpc()
-    {
-        ClientRpcParams clientRpcParams;
-
-        clientRpcParams = new ClientRpcParams
-        {
-            Send = new ClientRpcSendParams
-            {
-
-                TargetClientIds = new ulong[] { OwnerClientId }
-            }
-        };
-
-        if (currentKing == null)
-            return;
-
-        if (currentKing.IsInCheck())
-            ActivateCheckmateButtonClientRpc(true, clientRpcParams);
-        else
-            ActivateCheckmateButtonClientRpc(false, clientRpcParams);
-
-    }
-
-    [ClientRpc]
-    public void ActivateCheckmateButtonClientRpc(bool set, ClientRpcParams clientRpc = default) => checkmateButton.SetActive(set);
 
 
     #region Interact with board
@@ -634,11 +730,8 @@ public class ChessGen_Test : ChessGenerator, IMainBoardInfo
     }
 
     [ServerRpc]
-    void TestingYXServerRpc(/*int cX, int cY, int hX, int hY*/)
+    void TestingYXServerRpc()
     {
-        //Points cHover = new Points(cX, cY);
-        //Points hHover = new Points(hX, hY);
-
         if (pieceManager.IsCoordinateInList(currentHover))
         {
             if (ContainsVaildMove(ref availableMoves, currentHover) || ContainsVaildMove(ref availableSpecialMoves, currentHover))
@@ -833,36 +926,6 @@ public class ChessGen_Test : ChessGenerator, IMainBoardInfo
         pieceManager.PositionSinglePiece(rook, s);
     }
 
-    [ClientRpc]
-    public void CheckMateClientRpc(int team)
-    {
-        if (IsOwner)
-        DisplayVictory(team);
-    }
-
-    private void DisplayVictory(int winningTeam)
-    {
-        checkmateButton.gameObject.SetActive(false);
-        winScreen.SetActive(true);
-        whoWin.text = new string("Player " + winningTeam + " Wins!");
-    }
-
-
-    [ServerRpc]
-    public void OnCheckMateServerRpc()
-    {
-        gameManager.CheckGameOver(this);
-    }
-
-    public void OnResetButton()
-    {
-
-    }
-
-    public void OnExitButton()
-    {
-
-    }
 
     [ServerRpc]
     void HighlightTilesServerRpc()
@@ -901,18 +964,6 @@ public class ChessGen_Test : ChessGenerator, IMainBoardInfo
 
     #endregion
 
-    public void PositionSinglePiece(GameObject chesspieceReference, GameObject destinationPoint, bool force = false)
-    {
-        Chesspiece cp = chesspieceReference.GetComponent<Chesspiece>();
-        ChessPieceConnection tp = destinationPoint.GetComponent<ChessPieceConnection>();
-
-        cp.currentY = tp.GridY.Value;
-        cp.currentX = tp.GridX.Value;
-        tp.SetOccupiedPieceClientRpc(cp.GetComponent<NetworkObject>());
-        Vector3 pos = tp.pieceSetPoint.transform.position;
-        // cp.SetPositionServerRpc(pos, force);
-    }
-
     protected override GameObject GenerateSingleTile(ref int x, ref int y)
     {
         int x_R = 0;
@@ -923,6 +974,18 @@ public class ChessGen_Test : ChessGenerator, IMainBoardInfo
 
         // Add to setup tiles to setup piece placement later
         setupTiles.Add(new Points(x, y), tileObject);
+        if (armyEdgedPoints.Length > 0)
+        {
+            for (int i = 0; i < armyEdgedPoints.Length; i++)
+            {
+                if (setupTiles.ContainsKey(armyEdgedPoints[i]))
+                {
+                    Debug.Log("shooow");
+                    armyEdgedobjects[i] = setupTiles[armyEdgedPoints[i]].GetComponent<ChessPieceConnection>();
+                }
+            }
+        }
+
 
         //Mesh mesh = new Mesh();
         //tileObject.AddComponent<MeshFilter>().mesh = mesh;

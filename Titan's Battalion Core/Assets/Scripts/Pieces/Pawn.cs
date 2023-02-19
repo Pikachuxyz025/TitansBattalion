@@ -320,13 +320,6 @@ public class Pawn : Chesspiece
             Points[] points = new Points[2];
 
 
-            // if the pawn is on a player territory
-
-            // if the pawn is on the battlefield
-
-
-
-
             switch (team) // these are for capturing other pieces
             {
                 case 1:
@@ -367,24 +360,6 @@ public class Pawn : Chesspiece
             }
 
 
-            /*if (currentConn.spawnTerritoryId.Value == team)
-            {
-                for (int i = 0; i < addedPoints.Count; i++)
-                {
-                    if (i != team - 1)
-                    {
-                        c = new Points(currentX + addedPoints[i].X, currentY + addedPoints[i].Y);
-                        if (!chessManager.IsCoordinateInList(c))
-                            break;
-                        if (chessManager.IsOccupied(c))
-                            break;
-
-                        newMoves.Add(c);
-                    }
-                }
-                return newMoves;
-            }*/
-
             switch (currentConn.spawnTerritoryId.Value)
             {
                 case 0:
@@ -403,7 +378,11 @@ public class Pawn : Chesspiece
                     }
                     break;
                 case 1:
-                    c = new Points(currentX + addedPoints[1].X, currentY + addedPoints[1].Y);
+
+
+                    c = currentConn.spawnTerritoryId.Value == team ?
+                        new Points(currentX + addedPoints[1].X, currentY + addedPoints[1].Y)
+                        : new Points(currentX + addedPoints[0].X, currentY + addedPoints[0].Y);
                     if (!chessManager.IsCoordinateInList(c))
                         break;
                     if (chessManager.IsOccupied(c))
@@ -412,7 +391,9 @@ public class Pawn : Chesspiece
                     newMoves.Add(c);
                     break;
                 case 2:
-                    c = new Points(currentX + addedPoints[0].X, currentY + addedPoints[0].Y);
+                    c = currentConn.spawnTerritoryId.Value == team ?
+                                            new Points(currentX + addedPoints[0].X, currentY + addedPoints[0].Y)
+                                            : new Points(currentX + addedPoints[1].X, currentY + addedPoints[1].Y);
                     if (!chessManager.IsCoordinateInList(c))
                         break;
                     if (chessManager.IsOccupied(c))
@@ -421,7 +402,9 @@ public class Pawn : Chesspiece
                     newMoves.Add(c);
                     break;
                 case 3:
-                    c = new Points(currentX + addedPoints[2].X, currentY + addedPoints[2].Y);
+                    c = currentConn.spawnTerritoryId.Value == team ?
+                        new Points(currentX + addedPoints[2].X, currentY + addedPoints[2].Y)
+                        : new Points(currentX + addedPoints[2].X, currentY + addedPoints[2].Y);
                     if (!chessManager.IsCoordinateInList(c))
                         break;
                     if (chessManager.IsOccupied(c))
@@ -430,7 +413,9 @@ public class Pawn : Chesspiece
                     newMoves.Add(c);
                     break;
                 case 4:
-                    c = new Points(currentX + addedPoints[3].X, currentY + addedPoints[3].Y);
+                    c = currentConn.spawnTerritoryId.Value == team ?
+                                            new Points(currentX + addedPoints[3].X, currentY + addedPoints[3].Y)
+                                            : new Points(currentX + addedPoints[3].X, currentY + addedPoints[3].Y);
                     if (!chessManager.IsCoordinateInList(c))
                         break;
                     if (chessManager.IsOccupied(c))

@@ -68,11 +68,12 @@ public class MatchmakingService
         CreateLobbyOptions options = new CreateLobbyOptions
         {
             Data = new Dictionary<string, DataObject> {
-                { Contants.JoinKey, new DataObject(DataObject.VisibilityOptions.Member, joinCode) },
-                { Contants.GameTypeKey, new DataObject(DataObject.VisibilityOptions.Public, data.MainBoard.ToString(), DataObject.IndexOptions.N1) }
+                { Contants.JoinKey, new DataObject(DataObject.VisibilityOptions.Member, joinCode) }
+                //{ Contants.GameTypeKey, new DataObject(DataObject.VisibilityOptions.Public, data.GameMode.ToString(), DataObject.IndexOptions.N1) }
             }
         };
 
+        options.IsPrivate = false;
         _currentLobby = await Lobbies.Instance.CreateLobbyAsync(data.Name, data.MaxPlayers, options);
         RelayServerData relayServerData = new RelayServerData(a, "dtls");
         Transport.SetRelayServerData(relayServerData);
@@ -82,11 +83,24 @@ public class MatchmakingService
         PeriodicallyRefreshLobby();
     }
 
+
     public static async Task LockLobby()
     {
         try
         {
             await Lobbies.Instance.UpdateLobbyAsync(_currentLobby.Id, new UpdateLobbyOptions { IsLocked = true });
+        }
+        catch (Exception e)
+        {
+            Debug.Log($"Failed closing lobby: {e}");
+        }
+    }
+
+    public static async Task UnlockLobby()
+    {
+        try
+        {
+            await Lobbies.Instance.UpdateLobbyAsync(_currentLobby.Id, new UpdateLobbyOptions { IsLocked = false });
         }
         catch (Exception e)
         {

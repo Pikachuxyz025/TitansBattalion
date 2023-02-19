@@ -7,6 +7,13 @@ using Unity.Services.Lobbies.Models;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
+public enum GameMode
+{None=0,
+    Chess=1,
+    BasicBoard=2,
+    T2=3,
+}
+
 /// <summary>
 ///     NetworkBehaviours cannot easily be parented, so the network logic will take place
 ///     on the network scene object "NetworkLobby"
@@ -17,13 +24,19 @@ public class RoomScreen : MonoBehaviour
     [SerializeField] private Transform _playerPanelParent;
     [SerializeField] private TMP_Text _waitingText;
     [SerializeField] private GameObject _startButton, _readyButton;
-    [SerializeField] private TMP_Dropdown armyBoardDropdown;
+    [SerializeField] private TMP_Dropdown gameModeDropdown;
+    [SerializeField] private GameObject GameModeDropDown;
+    [SerializeField] private GameObject BoardSelectDropdown;
+    [SerializeField] private TMP_Dropdown boardDropdown;
+    [SerializeField] private TMP_Text boardType;
 
     private readonly List<LobbyPlayerPanel> _playerPanels = new();
     private bool _allReady;
     private bool _ready;
+    private GameMode selectedGameMode = GameMode.Chess;
 
     public static event Action StartPressed;
+    public static event Action<GameMode> ReadySet;
     public static event Action<GameData> GameStarted;
 
     [SerializeField] private GameData _gameData;
@@ -35,9 +48,13 @@ public class RoomScreen : MonoBehaviour
 
         LobbyOrchestrator.LobbyPlayersUpdated += NetworkLobbyPlayersUpdated;
         MatchmakingService.CurrentLobbyRefreshed += OnCurrentLobbyRefreshed;
+        SetOptions(gameModeDropdown, Contants.GameModes);
+
+
+        GameModeDropDown.SetActive(false);
+        BoardSelectDropdown.SetActive(false);
         _startButton.SetActive(false);
         _readyButton.SetActive(false);
-        SetOptions(armyBoardDropdown, Contants.Armies);
         _ready = false;
     }
 
@@ -64,13 +81,13 @@ public class RoomScreen : MonoBehaviour
         LobbyLeft?.Invoke();
     }
 
-    private void NetworkLobbyPlayersUpdated(Dictionary<ulong, bool> players,Dictionary<ulong,string>playerNames)
+    private void NetworkLobbyPlayersUpdated(Dictionary<ulong, bool> players, Dictionary<ulong, string> playerNames)
     {
         var allActivePlayerIds = players.Keys;
 
         // Remove all inactive panels
-       List<LobbyPlayerPanel> toDestroy = _playerPanels.Where(p => !allActivePlayerIds.Contains(p.PlayerId)).ToList();
-       
+        List<LobbyPlayerPanel> toDestroy = _playerPanels.Where(p => !allActivePlayerIds.Contains(p.PlayerId)).ToList();
+
         foreach (LobbyPlayerPanel panel in toDestroy)
         {
             _playerPanels.Remove(panel);
@@ -92,17 +109,42 @@ public class RoomScreen : MonoBehaviour
                 _playerPanels.Add(panel);
             }
         }
-
+        GameModeDropDown.SetActive(NetworkManager.Singleton.IsHost);
         _startButton.SetActive(NetworkManager.Singleton.IsHost && players.All(p => p.Value));
         _readyButton.SetActive(!_ready);
     }
 
-    public void ChangeReadyBool(int value)
+    public void SetActiveBoardBool(int value)
     {
         if (value != 0)
-            _readyButton.SetActive(true);
+        {
+            BoardSelectDropdown.SetActive(true);
+            switch (value)
+            {
+                case 1:
+                    boardType.text = "Main Board";
+                    SetOptions(boardDropdown, Contants.MainBoards);
+                    break;
+            }
+        }
         else
-            _readyButton.SetActive(false);
+        {
+            BoardSelectDropdown.SetActive(false);
+            selectedGameMode = GameMode.Chess;
+        }
+    }
+
+    public void SelectBattalionGameMode(int value)
+    {
+        switch (value)
+        {
+            case 0:
+                selectedGameMode = GameMode.BasicBoard;
+                break;
+            case 1:
+                selectedGameMode = GameMode.T2;
+                break;
+        }
     }
 
     public void SetOptions(TMP_Dropdown dropdown, IEnumerable<string> values)
@@ -117,7 +159,13 @@ public class RoomScreen : MonoBehaviour
 
     public void OnReadyClicked()
     {
+        if (NetworkManager.Singleton.IsHost)      
+            ReadySet?.Invoke(selectedGameMode);
+        
+
         _readyButton.SetActive(false);
+        GameModeDropDown.SetActive(false);
+        BoardSelectDropdown.SetActive(false);
         _ready = true;
     }
 

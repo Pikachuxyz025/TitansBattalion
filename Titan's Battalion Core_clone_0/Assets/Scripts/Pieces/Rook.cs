@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 
-public enum KinglySet
+public enum KingDirection
 {
     Up,
     Down,
@@ -21,9 +21,9 @@ public class Rook : Chesspiece
         myKing = kingly;
     }
 
-    public bool InRangeCheckX(out KinglySet setup)
+    public bool InRangeCheckX(out KingDirection setup)
     {
-        setup = KinglySet.None;
+        setup = KingDirection.None;
         if (myKing == null)
             return false;
         if (myKing.currentY != currentY)
@@ -34,21 +34,21 @@ public class Rook : Chesspiece
         if (CheckCoordinateDistance(myKing.currentX, currentX) > 2 && CheckCoordinateDistance(myKing.currentX, currentX) <= 4)
         {
             // the rook is to the left of the king
-            setup = KinglySet.Left;
+            setup = KingDirection.Left;
             return true;
         }
         if (CheckCoordinateDistance(myKing.currentX, currentX) < -2 && CheckCoordinateDistance(myKing.currentX, currentX) >= -4)
         {
             // the rook is to the right of the king
-            setup = KinglySet.Right;
+            setup = KingDirection.Right;
             return true;
         }
         return false;
     }
 
-    public bool InRangeCheckY(out KinglySet setup)
+    public bool InRangeCheckY(out KingDirection setup)
     {
-        setup = KinglySet.None;
+        setup = KingDirection.None;
         if (myKing == null)
             return false;
 
@@ -58,13 +58,13 @@ public class Rook : Chesspiece
         if (CheckCoordinateDistance(myKing.currentY, currentY) > 2 && CheckCoordinateDistance(myKing.currentY, currentY) <= 4)
         {
             // the rook is below the king
-            setup = KinglySet.Down;
+            setup = KingDirection.Down;
             return true;
         }
         if (CheckCoordinateDistance(myKing.currentY, currentY) < -2 && CheckCoordinateDistance(myKing.currentY, currentY) >= -4)
         {
             // the rook is above the king
-            setup = KinglySet.Up;
+            setup = KingDirection.Up;
             return true;
         }
         return false;

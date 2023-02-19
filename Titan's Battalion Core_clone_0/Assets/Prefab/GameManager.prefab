@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 3746741280344097782}
   - component: {fileID: 3746741280344097776}
   - component: {fileID: 3746741280344097783}
+  - component: {fileID: 2722820221501845953}
   - component: {fileID: 5545534553349427599}
   m_Layer: 0
   m_Name: GameManager
@@ -52,10 +53,11 @@ MonoBehaviour:
   chessboardManager: {fileID: 0}
   uiManager: {fileID: 0}
   playerList: []
+  playerActiveList: []
   mainBoardId: 0
   playerPrefab: {fileID: 5360451695460521378, guid: 0fd41045516b135469e29a1aca06b5f9, type: 3}
   dataSend: {fileID: 0}
-  state: 0
+  currentState: 0
 --- !u!114 &3746741280344097776
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -87,6 +89,25 @@ MonoBehaviour:
   pieceManager: {fileID: 3746741280344097776}
   mainBoardList:
   - {fileID: 11400000, guid: f22fb077a3a51e94b83ce0134c6a77ea, type: 2}
+  - {fileID: 11400000, guid: b318dee79639d2d4a940e862e344a4e4, type: 2}
+  battlefield: {fileID: 2722820221501845953}
+--- !u!114 &2722820221501845953
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3746741280344097780}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 22a41472dc9ca334699a912d22f8254d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  grave:
+  - {fileID: 11400000, guid: f22fb077a3a51e94b83ce0134c6a77ea, type: 2}
+  - {fileID: 11400000, guid: f22fb077a3a51e94b83ce0134c6a77ea, type: 2}
+  - {fileID: 11400000, guid: b318dee79639d2d4a940e862e344a4e4, type: 2}
+  set: 010000000200000003000000
 --- !u!114 &5545534553349427599
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -6,33 +6,35 @@ using UnityEngine.Events;
 using Unity.Netcode;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
-
+using System.Threading.Tasks;
 
 public enum GameState
 {
-    Starting,
-    Victory,
-    Lose,
-    MainMenu,
-
+    None = 0,
+    Loading = 1,
+    Running = 2,
+    End = 3,
+    Restart = 4,
 }
 
 public class GameManager : NetworkBehaviour
 {
     public static event Action<GameState> OnBeforeStateChanged;
     public static event Action<GameState> OnAfterStateChanged;
+    public static event Action GameReset;
+    public static event Action GameEnded;
     [SerializeField] private ChessPieceManager chessPieceManager;
     [SerializeField] private ChessboardGenerator chesGen;
     [SerializeField] private ChessboardManager chessboardManager;
     [SerializeField] public GameUIManager uiManager;
 
     public List<ChessGen_Test> playerList = new List<ChessGen_Test>();
-    private List<ChessGen_Test> playerActiveList = new List<ChessGen_Test>();
+    [SerializeField] private List<ChessGen_Test> playerActiveList = new List<ChessGen_Test>();
     public int mainBoardId;
 
     [SerializeField] private ChessGen_Test playerPrefab;
     [SerializeField] private DataSend dataSend;
-    public GameState state;
+    public GameState currentState;
     private bool isRestarting=false;
     public static GameManager instance;
     private int playerCount = 0;
@@ -40,24 +42,28 @@ public class GameManager : NetworkBehaviour
     private void Awake()
     {
         instance = this;
+        GameReset += ResetingGame;
+        GameEnded += EndingGame;
+        //GameEnded += LeavingGame;
+    }
+
+    public Chessboard_Testing GetMainBoard()
+    {
+        return chesGen.chessboard;
     }
 
     public override void OnDestroy()
     {
-        //base.OnDestroy();
-        /*if (!isRestarting)
-        {
-            MatchmakingService.LeaveLobby();
-            if (NetworkManager.Singleton != null) NetworkManager.Singleton.Shutdown();
-        }*/
+
+        //GameReset -= ResetingGame;
+        //GameEnded -= EndingGameClientRpc;
+        //GameEnded -= LeavingGame;
     }
 
-    [ServerRpc]
-    void CreateSendDataServerRpc()
+    private async void LeavingGame()
     {
-        var createdData = Instantiate(dataSend);
-        DataSend.mainBoardId = mainBoardId;
-        createdData.GetComponent<NetworkObject>().Spawn(false);
+        await MatchmakingService.LeaveLobby();
+        NetworkManager.Singleton.Shutdown();
     }
 
     public override void OnNetworkSpawn()
@@ -73,25 +79,24 @@ public class GameManager : NetworkBehaviour
 
         ChessGen_Test chessGen = spawn.GetComponent<ChessGen_Test>();
         playerList.Add(chessGen);
-        chessGen.teamNumber.Value = playerList.IndexOf(chessGen) + 1;
-        chessGen.pieceManager = chessPieceManager;
-        chessGen.boardGenerator = chesGen;
+        chessGen.SetupVariables(DataSend.boardData, playerList.IndexOf(chessGen) + 1, chessPieceManager, chesGen);
         spawn.NetworkObject.SpawnWithOwnership(playerId);
-        SetClientRpc(spawn.NetworkObject);
+        SetClientRpc(spawn.NetworkObject,playerId);
         ChessGen_Test.OnSetModeSet += StartGameServerRpc;
         playerCount++;
     }
 
+
     [ClientRpc]
-    private void SetClientRpc(NetworkObjectReference target)
+    private void SetClientRpc(NetworkObjectReference target,ulong playerId)
     {
         if (target.TryGet(out NetworkObject targetObject))
         {
             ChessGen_Test chessGen = targetObject.GetComponent<ChessGen_Test>();
-            chessGen.pieceManager = chessPieceManager;
-            chessGen.boardGenerator = chesGen;
         }
     }
+
+
 
     [ServerRpc(RequireOwnership = false)]
     public void SetPlayerTurnServerRpc()
@@ -143,16 +148,18 @@ public class GameManager : NetworkBehaviour
     public void GameRestart()
     {
         if (CheckForGameRestart())
-        { if (IsServer)
-                ResetingGame();
+        {
+            if (IsServer)
+                GameReset?.Invoke();
         }
     }
+
     public void GameEnd()
     {
         if (CheckForGameEnd())
         {
             if (IsServer)
-                EndingGameClientRpc();
+                GameEnded?.Invoke();
         }
     }
 
@@ -169,22 +176,39 @@ public class GameManager : NetworkBehaviour
     private void ResetingGame()
     {
         isRestarting = true;
-        //DontDestroyOnLoad(DataSend.instance.gameObject);
-        using (new Load("Restarting Game..."))
+        if (IsServer)
+            DestroyPlayers();
+
+
+        NetworkManager.Singleton.SceneManager.LoadScene("Game", LoadSceneMode.Single);
+
+    }
+
+
+    private void DestroyPlayers()
+    {
+        if (playerList.Count > 0)
         {
-            NetworkManager.Singleton.SceneManager.LoadScene("Game", LoadSceneMode.Single);
+            for (int i = 0; i < playerList.Count; i++)
+            {
+                ChessGen_Test player = playerList[i];
+                playerList[i] = null;
+                if (player != null)
+                {
+                    player.RemoveChessPieces();
+                    Destroy(player.gameObject);
+                }
+            }
         }
     }
 
-    [ClientRpc]
-    private void EndingGameClientRpc()
+    private void EndingGame()
     {
         isRestarting = false;
-       // DontDestroyOnLoad(DataSend.instance.gameObject);
-        using (new Load("Leaving Game..."))
-        {
-            NetworkManager.Singleton.SceneManager.LoadScene("Authentication", LoadSceneMode.Single);
-        }
+        if (IsServer)       
+            DestroyPlayers();
+            NetworkManager.Singleton.SceneManager.LoadScene("Login Menu", LoadSceneMode.Single);
+               
     }
 
 
@@ -205,37 +229,63 @@ public class GameManager : NetworkBehaviour
         foreach (ChessGen_Test chester in playerList)
         {
             if (chester.currentSetModeNet.Value != SetMode.Set)
-            {
-                Debug.Log("not set");
                 return false;
-            }
             else
                 playerActiveList.Add(chester);
         }
-        Debug.Log("All set");
         return true;
     }
+
+
+
+
 
     public void ChangeState(GameState newState)
     {
         OnBeforeStateChanged?.Invoke(newState);
 
-        state = newState;
+        currentState = newState;
         switch (newState)
         {
-            case GameState.Starting:
+            case GameState.None:
                 break;
-            case GameState.Victory:
+            case GameState.Loading:
+                StartLoading();
                 break;
-            case GameState.Lose:
+            case GameState.Running:
+                StartRunning();
                 break;
-            case GameState.MainMenu:
+            case GameState.End:
+                StartEnd();
+                break;
+            case GameState.Restart:
+                StartRestart();
                 break;
             default:
-                throw new ArgumentOutOfRangeException(nameof(newState), newState, null);
+                break;
         }
 
         OnAfterStateChanged?.Invoke(newState);
+    }
+
+    void StartLoading()
+    {
+        Debug.Log("Start Load");
+    }
+
+    void StartRunning()
+    {
+        Debug.Log("Start Run");
+    }
+
+    void StartEnd()
+    {
+        Debug.Log("Start End");
+    }
+
+    void StartRestart()
+    {
+        Debug.Log("Restart");
     }
 
     public void GetPlayerCount(int playerNum) => playerCount = playerNum;

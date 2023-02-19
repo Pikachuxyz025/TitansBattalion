@@ -10,9 +10,7 @@ public class ChessboardGenerator : ChessGenerator
     [SerializeField] ChessPieceManager pieceManager;
     public static ChessboardGenerator Instance;
 
-
-    [SerializeField] private List<Chessboard_Testing> mainBoardList = new List<Chessboard_Testing>();
-
+    [SerializeField] private GameModeMainBoard battlefield=new GameModeMainBoard();
     public delegate void ChangeValueDelegate(int NewX, int NewY);
     public ChangeValueDelegate ChangeValue;
 
@@ -38,8 +36,9 @@ public class ChessboardGenerator : ChessGenerator
     [ServerRpc]
     void SetupTerritoryServerRpc()
     {
-        if (mainBoardList.Count >= DataSend.mainBoardId + 1)
-            chessboard = mainBoardList[DataSend.mainBoardId];
+        if (DataSend.boardData != GameMode.None)
+            chessboard = battlefield.GetBattlefields(DataSend.boardData);
+
         Generator();
     }
 

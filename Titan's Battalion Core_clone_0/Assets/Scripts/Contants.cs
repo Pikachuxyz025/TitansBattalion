@@ -8,6 +8,7 @@ public abstract class Contants
     public const string DifficultyKey = "d";
     public const string GameTypeKey = "t";
 
-    public static readonly List<string> MainBoards = new() { "Battle Royal", "Capture The Flag", "Creative" };
-    public static readonly List<string> Armies = new() { "None", "Testing", "Medium", "Hard" };
+    public static readonly List<string> GameModes = new() { "Chess Mode", "Battalion Mode" };
+    public static readonly List<string> MainBoards = new() { "BasicBoard", "T2" };
+    public static readonly List<string> Armies = new() {"Medieval", "Castling Test","5 X 10" };
 }

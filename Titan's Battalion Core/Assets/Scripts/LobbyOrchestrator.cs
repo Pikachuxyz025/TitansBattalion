@@ -31,10 +31,14 @@ public class LobbyOrchestrator : NetworkBehaviour
         LobbyRoomPanel.LobbySelected += OnLobbySelected;
         RoomScreen.LobbyLeft += OnLobbyLeft;
         RoomScreen.StartPressed += OnGameStart;
+        RoomScreen.ReadySet += CreateSendDataServerRpc;
 
 
         NetworkObject.DestroyWithScene = true;
         currentPlayerName = Authentication.PlayerName;
+
+        if (NetworkManager.Singleton.IsListening)
+            ReturnToLobby();
         //Debug.Log(currentPlayerName);
     }
 
@@ -68,6 +72,7 @@ public class LobbyOrchestrator : NetworkBehaviour
 
     #endregion
 
+
     #region Create
 
     private async void CreateLobby(LobbyData data)
@@ -85,7 +90,7 @@ public class LobbyOrchestrator : NetworkBehaviour
 
                 // Starting the host immediately will keep the relay server alive
                 NetworkManager.Singleton.StartHost();
-                CreateSendDataServerRpc(data.MainBoard);
+                //CreateSendDataServerRpc(data.GameMode);
             }
             catch (Exception e)
             {
@@ -94,30 +99,68 @@ public class LobbyOrchestrator : NetworkBehaviour
             }
         }
     }
+    private async void ReturnToLobby()
+    {
+        using (new Load("Returning To Lobby..."))
+        {
+            try
+            {
+                _mainLobbyScreen.gameObject.SetActive(false);
+                _roomScreen.gameObject.SetActive(true);
+
+                if (NetworkManager.Singleton.IsHost)
+                    await MatchmakingService.UnlockLobby();
+                LobbySetServerRpc();
+
+                //PropagateToClients();
+
+                //UpdateInterface();
+            }
+            catch (Exception e)
+            {
+                Debug.LogError(e);
+                CanvasUtilities.Instance.ShowError("Failed returning to lobby");
+            }
+        }
+    }
+    [ServerRpc(RequireOwnership =false)]
+    public void LobbySetServerRpc()
+    {
+        Debug.Log("shower");
+        PropagateToClients();
+
+        UpdateInterface();
+    }
 
     #endregion
 
     #region Room
 
     private readonly Dictionary<ulong, bool> _playersInLobby = new();
-    private readonly Dictionary<ulong,string> _playerLobbyNames = new();
-    public static event Action<Dictionary<ulong, bool>,Dictionary<ulong,string>> LobbyPlayersUpdated;
+    private readonly Dictionary<ulong, string> _playerLobbyNames = new();
+    public static event Action<Dictionary<ulong, bool>, Dictionary<ulong, string>> LobbyPlayersUpdated;
     private float _nextLobbyUpdate;
 
     public override void OnNetworkSpawn()
     {
         if (IsServer)
         {
+            Debug.Log("Show me network");
             NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnectedCallback;
             _playersInLobby.Add(NetworkManager.Singleton.LocalClientId, false);
             _playerLobbyNames.Add(NetworkManager.Singleton.LocalClientId, Authentication.PlayerName);
+           // NetworkManager.Singleton.SceneManager.OnSceneEvent += SceneManager_OnSceneEvent;
             UpdateInterface();
         }
         currentPlayerId = NetworkManager.Singleton.LocalClientId;
-        AddServerRpc(currentPlayerId,currentPlayerName);
+        if(currentPlayerName==String.Empty)
+            currentPlayerName = Authentication.PlayerName;
+        AddServerRpc(currentPlayerId, currentPlayerName);
         // Client uses this in case host destroys the lobby
         NetworkManager.Singleton.OnClientDisconnectCallback += OnClientDisconnectCallback;
     }
+
+
 
     private void OnClientConnectedCallback(ulong playerId)
     {
@@ -135,25 +178,29 @@ public class LobbyOrchestrator : NetworkBehaviour
 
     [ServerRpc(RequireOwnership = false)]
     void AddServerRpc(ulong player, string name)
-    {
-        Debug.Log("Current client " + player + " " + name);
+    {if (name == String.Empty)
+            Debug.Log("Current client " + player + " no name");
+        else
+            Debug.Log("Current client " + player + " " + name);
         if (!_playerLobbyNames.ContainsKey(player)) _playerLobbyNames.Add(player, name);
+        if (!_playersInLobby.ContainsKey(player)) _playersInLobby.Add(player, false);
     }
 
     private void PropagateToClients()
     {
+        Debug.Log("Number of players in lobby: "+_playersInLobby.Count);
         foreach (var player in _playersInLobby) UpdatePlayerClientRpc(player.Key, player.Value, _playerLobbyNames[player.Key]);
     }
 
     [ClientRpc]
-    private void UpdatePlayerClientRpc(ulong clientId, bool isReady,string playerName)
+    private void UpdatePlayerClientRpc(ulong clientId, bool isReady, string playerName)
     {
         if (IsServer) return;
 
         if (!_playersInLobby.ContainsKey(clientId)) _playersInLobby.Add(clientId, isReady);
         else _playersInLobby[clientId] = isReady;
 
-       //Debug.Log(currentPlayerName);
+        //Debug.Log(currentPlayerName);
         if (!_playerLobbyNames.ContainsKey(clientId)) _playerLobbyNames.Add(clientId, playerName);
         else _playerLobbyNames[clientId] = playerName;
 
@@ -205,16 +252,16 @@ public class LobbyOrchestrator : NetworkBehaviour
     }
 
     [ServerRpc]
-    void CreateSendDataServerRpc(int mainData)
+    void CreateSendDataServerRpc(GameMode mode)
     {
         var createdData = Instantiate(dataSend);
-        DataSend.mainBoardId = mainData;
+        DataSend.boardData = mode;
         createdData.GetComponent<NetworkObject>().Spawn(false);
     }
 
     private void UpdateInterface()
     {
-        LobbyPlayersUpdated?.Invoke(_playersInLobby,_playerLobbyNames);
+        LobbyPlayersUpdated?.Invoke(_playersInLobby, _playerLobbyNames);
     }
 
     private async void OnLobbyLeft()
@@ -252,12 +299,117 @@ public class LobbyOrchestrator : NetworkBehaviour
 
     private async void OnGameStart()
     {
-        //Scene currentscene = SceneManager.GetActiveScene();
+        Scene currentscene = SceneManager.GetActiveScene();
         using (new Load("Starting the game..."))
         {
             await MatchmakingService.LockLobby();
-            NetworkManager.Singleton.SceneManager.LoadScene("Game", LoadSceneMode.Single);
-            //NetworkManager.Singleton.SceneManager.UnloadScene(currentscene);
+NetworkManager.Singleton.SceneManager.LoadScene("Game", LoadSceneMode.Single);            
+        }
+    }
+
+    private void SceneManager_OnSceneEvent(SceneEvent sceneEvent)
+    {
+        // Both client and server receive these notifications
+        switch (sceneEvent.SceneEventType)
+        {
+            // Handle server to client Load Notifications
+            case SceneEventType.Load:
+                {
+                    // This event provides you with the associated AsyncOperation
+                    // AsyncOperation.progress can be used to determine scene loading progression
+                    var asyncOperation = sceneEvent.AsyncOperation;
+                    // Since the server "initiates" the event we can simply just check if we are the server here
+                    if (IsServer)
+                    {
+                        // Handle server side load event related tasks here
+                    }
+                    else
+                    {
+                        // Handle client side load event related tasks here
+                    }
+                    break;
+                }
+            // Handle server to client unload notifications
+            case SceneEventType.Unload:
+                {
+                    // You can use the same pattern above under SceneEventType.Load here
+                    break;
+                }
+            // Handle client to server LoadComplete notifications
+            case SceneEventType.LoadComplete:
+                {
+                    // This will let you know when a load is completed
+                    // Server Side: receives this notification for both itself and all clients
+                    if (IsServer)
+                    {
+                        if (sceneEvent.ClientId == NetworkManager.LocalClientId)
+                        {
+                            // Handle server side LoadComplete related tasks here
+                        }
+                        else
+                        {
+                            // Handle client LoadComplete **server-side** notifications here
+                        }
+                    }
+                    else // Clients generate this notification locally
+                    {
+                        // Handle client side LoadComplete related tasks here
+                    }
+
+                    // So you can use sceneEvent.ClientId to also track when clients are finished loading a scene
+                    break;
+                }
+            // Handle Client to Server Unload Complete Notification(s)
+            case SceneEventType.UnloadComplete:
+                {
+                    // This will let you know when an unload is completed
+                    // You can follow the same pattern above as SceneEventType.LoadComplete here
+
+                    // Server Side: receives this notification for both itself and all clients
+                    // Client Side: receives this notification for itself
+
+                    // So you can use sceneEvent.ClientId to also track when clients are finished unloading a scene
+                    break;
+                }
+            // Handle Server to Client Load Complete (all clients finished loading notification)
+            case SceneEventType.LoadEventCompleted:
+                {
+                    // This will let you know when all clients have finished loading a scene
+                    // Received on both server and clients
+                    SceneManager.SetActiveScene(SceneManager.GetSceneByName("Game"));
+                    foreach (var clientId in sceneEvent.ClientsThatCompleted)
+                    {
+                        // Example of parsing through the clients that completed list
+                        if (IsServer)
+                        {
+                            // Handle any server-side tasks here
+                        }
+                        else
+                        {
+                            // Handle any client-side tasks here
+                        }
+                    }
+                    break;
+                }
+            // Handle Server to Client unload Complete (all clients finished unloading notification)
+            case SceneEventType.UnloadEventCompleted:
+                {
+                    // This will let you know when all clients have finished unloading a scene
+                    // Received on both server and clients
+                    foreach (var clientId in sceneEvent.ClientsThatCompleted)
+                    {
+                        // Example of parsing through the clients that completed list
+                        if (IsServer)
+                        {
+                            // Handle any server-side tasks here
+                        }
+                        else
+                        {
+                            // Handle any client-side tasks here
+                        }
+                    }
+                    break;
+                }
         }
     }
 

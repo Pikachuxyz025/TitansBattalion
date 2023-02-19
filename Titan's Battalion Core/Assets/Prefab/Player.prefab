@@ -9,6 +9,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 8432157920441759454}
+  - component: {fileID: 4757412598191659301}
   - component: {fileID: 5360451695460521378}
   - component: {fileID: 6443070331896006688}
   - component: {fileID: 7159557365058150070}
@@ -36,6 +37,21 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &4757412598191659301
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9013614472923032471}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cd7c119c9543610468f02f14981c172e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  grave:
+  - {fileID: 11400000, guid: 5cf782c50353d354d91a89fd3bbd1926, type: 2}
+  set: 01000000
 --- !u!114 &5360451695460521378
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -52,36 +68,38 @@ MonoBehaviour:
   piece: {fileID: 3471896705929466035, guid: 768718f4b168b6a45a1864a998f22655, type: 3}
   pieceManager: {fileID: 0}
   boardGenerator: {fileID: 0}
+  gameManager: {fileID: 0}
+  playerUI: {fileID: 5189829321658747103}
+  winScreen: {fileID: 2673834178061665789}
+  whoWin: {fileID: 7486264975259035989}
+  dropdown: {fileID: 5093918798473555593}
+  checkmateButton: {fileID: 4767125842031582304}
   armyBoardList:
   - {fileID: 11400000, guid: 5cf782c50353d354d91a89fd3bbd1926, type: 2}
   - {fileID: 11400000, guid: ba51654f4c075064b9aa57165c77a791, type: 2}
+  - {fileID: 11400000, guid: 0242fe6501a07dd4ca025b1fbc45281f, type: 2}
+  yoffset: 0.2
+  dragOffset: 1.5
+  gameModeTerritory: {fileID: 4757412598191659301}
+  armyEdgedPoints: []
+  armyEdgedobjects: []
   currentCamera: {fileID: 0}
   currentlyDragging: {fileID: 0}
   currentHover:
     X: 1984987
     Y: 51684
-  yoffset: 0.2
-  dragOffset: 1.5
   availableMoves: []
   availableSpecialMoves: []
+  spawnedObject: []
+  connections: []
   teamNumber:
     m_InternalValue: 0
-  spawnedObject: []
   mainBoardOffsetX: 0
   mainBoardOffsetY: 0
-  dropdown: {fileID: 5093918798473555593}
-  connections: []
-  gameManager: {fileID: 0}
-  winScreen: {fileID: 2673834178061665789}
-  whoWin: {fileID: 7486264975259035989}
-  retryToggle: {fileID: 0}
   retryBool:
     m_InternalValue: 0
   endBool:
     m_InternalValue: 0
-  currentKing: {fileID: 0}
-  inCheck: 0
-  checkmateButton: {fileID: 4767125842031582304}
   setCurrentDrag: 0
   setCameraTransform:
   - {x: 4.5, y: 20, z: 1}
@@ -370,6 +388,10 @@ PrefabInstance:
       propertyPath: m_PresetInfoIsWorld
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 6956502555682056690, guid: 53677568fa3e72a459ba5c844a0d34c5, type: 3}
+      propertyPath: m_OnValueChanged.m_PersistentCalls.m_Calls.Array.size
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 7211232416777984795, guid: 53677568fa3e72a459ba5c844a0d34c5, type: 3}
       propertyPath: m_IsActive
       value: 0
@@ -397,6 +419,10 @@ PrefabInstance:
     - target: {fileID: 7943980695021784996, guid: 53677568fa3e72a459ba5c844a0d34c5, type: 3}
       propertyPath: m_Name
       value: PlayerUI
+      objectReference: {fileID: 0}
+    - target: {fileID: 7943980695021784996, guid: 53677568fa3e72a459ba5c844a0d34c5, type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 9099687763366934981, guid: 53677568fa3e72a459ba5c844a0d34c5, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.size
@@ -487,6 +513,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7b743370ac3e4ec2a1668f5455a8ef8a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!1 &5189829321658747103 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 7943980695021784996, guid: 53677568fa3e72a459ba5c844a0d34c5, type: 3}
+  m_PrefabInstance: {fileID: 2754877094326814587}
+  m_PrefabAsset: {fileID: 0}
 --- !u!114 &7486264975259035989 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 4746728362162433582, guid: 53677568fa3e72a459ba5c844a0d34c5, type: 3}

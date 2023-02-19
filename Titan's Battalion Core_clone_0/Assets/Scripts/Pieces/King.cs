@@ -169,6 +169,23 @@ public List<Rook> rooks=new List<Rook>();
         return IsInCheck() || (chessManager.GetChesspieceConnection(p).inCheck.Count > 1);
     }
 
+    bool KingCheck(Points p)
+    {
+        return (chessManager.GetChesspieceConnection(p).inCheck.Count > 1);
+    }
+
+    public bool CompleteKingCheckmate()
+    {
+        bool isCheckmateOfficial = true;
+        foreach (Points moves in GetAvailableMoves())
+        {
+            if(!KingCheck(moves))
+                isCheckmateOfficial = false;
+        }
+        return isCheckmateOfficial && IsInCheck();
+    } 
+
+
     public override List<Points> GetSpecialMoves()
     {
         List<Points> result = new List<Points>();
@@ -182,15 +199,17 @@ public List<Rook> rooks=new List<Rook>();
 
         foreach (Rook rook in rooks)
         {
-            KinglySet set = new KinglySet();
+            KingDirection set = new KingDirection();
             if (rook.InRangeCheckX(out set))
             {
                 int a = 0;
+                bool b = false; 
                 // if true is the rook on my left or on my right?
                 switch (set)
                 {
-                    case KinglySet.Left:
+                    case KingDirection.Left:
                         a = -1;
+                        b = false;
                         Points s = new Points(currentX + a, currentY);
 
                         if (CastlingCheck(s))
@@ -201,14 +220,20 @@ public List<Rook> rooks=new List<Rook>();
                         {
                             Points p = new Points(i, currentY);
                             if (chessManager.IsOccupied(p))
+                            {
+                                b = true;
                                 break;
+                            }
+                            Debug.Log("Left "+p.X + " and" + p.Y + " are not breaking");
                         }
+                        if (b) break;
                         specialMove = SpecialMove.Castling;
                         result.Add(new Points(currentX + specialPoints[0].X, currentY + specialPoints[0].Y));
                         break;
 
-                    case KinglySet.Right:
+                    case KingDirection.Right:
                         a = 1;
+                        b = false;
                         s = new Points(currentX + a, currentY);
 
                         if (CastlingCheck(s))
@@ -219,8 +244,12 @@ public List<Rook> rooks=new List<Rook>();
                         {
                             Points p = new Points(i, currentY);
                             if (chessManager.IsOccupied(p))
+                            {
+                                b = true;
                                 break;
+                            }
                         }
+                        if (b) break;
                         specialMove = SpecialMove.Castling;
                         result.Add(new Points(currentX + specialPoints[1].X, currentY + specialPoints[1].Y));
                         break;
@@ -230,11 +259,13 @@ public List<Rook> rooks=new List<Rook>();
             if (rook.InRangeCheckY(out set))
             {
                 int a = 0;
+                bool b = false;
                 // if true is the rook above me or below me?
                 switch (set)
                 {
-                    case KinglySet.Up:
+                    case KingDirection.Up:
                         a = 1;
+                        b = false;
                         Points s = new Points(currentX + a, currentY);
 
                         if (CastlingCheck(s))
@@ -245,14 +276,19 @@ public List<Rook> rooks=new List<Rook>();
                         {
                             Points p = new Points(currentX, i);
                             if (chessManager.IsOccupied(p))
+                            {
+                                b = true;
                                 break;
+                            }
                         }
+                        if (b) break;
                         specialMove = SpecialMove.Castling;
                         result.Add(new Points(currentX + specialPoints[3].X, currentY + specialPoints[3].Y));
                         break;
 
-                    case KinglySet.Down:
+                    case KingDirection.Down:
                         a = -1;
+                        b = false;
                         s = new Points(currentX + a, currentY);
 
                         if (CastlingCheck(s))
@@ -263,8 +299,12 @@ public List<Rook> rooks=new List<Rook>();
                         {
                             Points p = new Points(currentX, i);
                             if (chessManager.IsOccupied(p))
+                            {
+                                b = true;
                                 break;
+                            }
                         }
+                        if (b) break;
                         specialMove = SpecialMove.Castling;
                         result.Add(new Points(currentX + specialPoints[2].X, currentY + specialPoints[2].Y));
                         break;

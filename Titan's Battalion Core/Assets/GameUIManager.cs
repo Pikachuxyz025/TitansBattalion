@@ -29,13 +29,4 @@ public class GameUIManager : MonoBehaviour
     {
         return armySelection.value;
     }
-
-
-    public void ChangeReadyBool(int value)
-    {
-        if (value != 0)
-            _readyButton.SetActive(true);
-        else
-            _readyButton.SetActive(false);
-    }
 }

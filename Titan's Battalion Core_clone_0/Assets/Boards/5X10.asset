@@ -10,30 +10,32 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 1bafb43c13672b94fb163ad49568b057, type: 3}
-  m_Name: CastlingTest
+  m_Name: 5X10
   m_EditorClassIdentifier: 
-  tileMaterial: {fileID: 2100000, guid: 80abd1b50ca516a4ca64d0565dcf1147, type: 2}
-  tileCountX: 8
-  tileCountY: 3
-  removedTilePoints: []
-  TileEdgedPoints:
-  - X: 0
+  tileMaterial: {fileID: 0}
+  tileCountX: 10
+  tileCountY: 5
+  removedTilePoints:
+  - X: 5
     Y: 2
   - X: 7
-    Y: 2
+    Y: 3
   isArmy: 1
   tieInArmy: {fileID: 0}
   ArmyName: 
   prefabs:
-  - {fileID: 6575477397426356341, guid: 3795c0621b38af745b0af533280f9fcb, type: 3}
   - {fileID: 1129620202532053857, guid: afaaad9decc1b694a9f47f1e259c1a45, type: 3}
-  - {fileID: 6575477397426356341, guid: 3795c0621b38af745b0af533280f9fcb, type: 3}
+  - {fileID: 7897422313832122412, guid: 32014b8b1680adc42908054a34fda948, type: 3}
+  - {fileID: 7897422313832122412, guid: 32014b8b1680adc42908054a34fda948, type: 3}
+  - {fileID: 4648733261814811667, guid: b3b74b4bf5b8e1b44a09c69a209b2d68, type: 3}
   armyCoordinates:
   - X: 7
-    Y: 0
+    Y: 2
   - X: 4
+    Y: 1
+  - X: 2
     Y: 0
-  - X: 0
-    Y: 0
-  mainBoardTileCountX: 8
-  mainBoardTileCountY: 8
+  - X: 1
+    Y: 1
+  mainBoardTileCountX: 0
+  mainBoardTileCountY: 0

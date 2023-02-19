@@ -9,7 +9,7 @@ public struct LobbyData
 {
     public string Name;
     public int MaxPlayers;
-    public int MainBoard;
+    public int GameMode;
 }
 
 public struct GameData
@@ -22,7 +22,7 @@ public struct GameData
 public class CreateLobbyScreen : MonoBehaviour
 {
     [SerializeField] private TMP_InputField _nameInput, _maxPlayersInput;
-    [SerializeField] private TMP_Dropdown armyBoardDropdown, mainBoardDropdown;
+    [SerializeField] private TMP_Dropdown armyBoardDropdown, gameModeDropdown;
     [SerializeField] private Slider slider;
     [SerializeField] private TextMeshProUGUI sliderText;
     public static event Action<LobbyData> LobbyCreated;
@@ -30,11 +30,11 @@ public class CreateLobbyScreen : MonoBehaviour
     private void Start()
     {
         slider.onValueChanged.AddListener((v) => sliderText.text = v.ToString("0"));
-        SetOptions(mainBoardDropdown, Contants.MainBoards);
+        /*SetOptions(gameModeDropdown, Contants.GameModes);
         void SetOptions(TMP_Dropdown dropdown, IEnumerable<string> values)
         {
             dropdown.options = values.Select(type => new TMP_Dropdown.OptionData { text = type }).ToList();
-        }
+        }*/
     }
 
     public void OnCreateClicked()
@@ -43,7 +43,7 @@ public class CreateLobbyScreen : MonoBehaviour
         {
             Name = _nameInput.text,
             MaxPlayers = (int)slider.value, //int.Parse(_maxPlayersInput.text),
-            MainBoard = mainBoardDropdown.value,
+            //GameMode = gameModeDropdown.value,
         };
 
         LobbyCreated?.Invoke(lobbyData);

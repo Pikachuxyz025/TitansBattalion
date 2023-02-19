@@ -23,17 +23,17 @@ public class LobbyRoomPanel : MonoBehaviour
     {
         Lobby = lobby;
         _nameText.text = lobby.Name;
-        _typeText.text = Contants.MainBoards[GetValue(Contants.GameTypeKey)];
+        //_typeText.text = Contants.MainBoards[GetValue(Contants.GameTypeKey)];
 
         //var point = Mathf.InverseLerp(0, Contants.Difficulties.Count - 1, GetValue(Contants.DifficultyKey));
         //_difficultyMeter.transform.rotation = Quaternion.Euler(0, 0, Mathf.Lerp(_difficultyDialMaxAngle, -_difficultyDialMaxAngle, point));
 
         _playerCountText.text = $"{lobby.Players.Count}/{lobby.MaxPlayers}";
 
-        int GetValue(string key)
+        /*int GetValue(string key)
         {
             return int.Parse(lobby.Data[key].Value);
-        }
+        }*/
     }
 
     public void Clicked()
