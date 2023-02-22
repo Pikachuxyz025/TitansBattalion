@@ -362,16 +362,16 @@ public class Pawn : Chesspiece
 
             switch (currentConn.spawnTerritoryId.Value)
             {
-                case 0:
+                case 0: // Battlefield Movement
                     for (int i = 0; i < addedPoints.Count; i++)
                     {
                         if (i != team - 1)
                         {
                             c = new Points(currentX + addedPoints[i].X, currentY + addedPoints[i].Y);
                             if (!chessManager.IsCoordinateInList(c))
-                                break;
+                                continue;
                             if (chessManager.IsOccupied(c))
-                                break;
+                                continue;
 
                             newMoves.Add(c);
                         }

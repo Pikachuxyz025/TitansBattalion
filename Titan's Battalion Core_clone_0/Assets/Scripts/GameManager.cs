@@ -32,6 +32,7 @@ public class GameManager : NetworkBehaviour
     [SerializeField] private List<ChessGen_Test> playerActiveList = new List<ChessGen_Test>();
     public int mainBoardId;
 
+    [SerializeField] private NetworkVariable<bool> gameStarted=new NetworkVariable<bool>(false);
     [SerializeField] private ChessGen_Test playerPrefab;
     [SerializeField] private DataSend dataSend;
     public GameState currentState;
@@ -220,8 +221,14 @@ public class GameManager : NetworkBehaviour
             turnNumber = 0;
             playerList[turnNumber].isMyTurnNet.Value = true;
             chessPieceManager.SetTilesInCheck();
+            gameStarted.Value = true;
             ChessGen_Test.OnSetModeSet -= StartGameServerRpc;
         }
+    }
+
+    public bool HasGameStarted()
+    {
+        return gameStarted.Value;
     }
 
     private bool CheckSetMode()

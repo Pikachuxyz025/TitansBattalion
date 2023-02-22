@@ -58,7 +58,7 @@ public class ChessGen_Test : ChessGenerator, IMainBoardInfo
 
     public NetworkVariable<bool> retryBool = new NetworkVariable<bool>(false);
     public NetworkVariable<bool> endBool = new NetworkVariable<bool>(false);
-    private King currentKing;
+    [SerializeField] private King currentKing;
 
 
     [SerializeField] private bool setCurrentDrag = false;
@@ -363,7 +363,8 @@ public class ChessGen_Test : ChessGenerator, IMainBoardInfo
                     Interact();
                 else
                     ResetCurrentHoverServerRpc();
-                ActiveCheckMateServerRpc();
+                if (gameManager.HasGameStarted())
+                    ActiveCheckMateServerRpc();
                 break;
         }
     }
@@ -646,24 +647,6 @@ public class ChessGen_Test : ChessGenerator, IMainBoardInfo
         else
         {
             TestingYXServerRpc();
-            #region Coda
-            /*if (pieceManager.IsCoordinateInList(currentHover))
-            {
-                if (ContainsVaildMove(ref availableMoves, currentHover))
-                    pieceManager.SwapLayerServerRpc(currentHover.X, currentHover.Y, "Highlight");
-                else
-                    pieceManager.SwapLayerServerRpc(currentHover.X, currentHover.Y, "Tile");
-                currentHover = new Points(1984987, 51684);
-            }
-
-            if (currentlyDragging != null && Input.GetMouseButtonUp(0))
-            {
-                Points priorPosition = new Points(currentlyDragging.currentX, currentlyDragging.currentY);
-                currentlyDragging.ReturnPositionServerRpc(pieceManager.GetNewPiecePosition(priorPosition));
-                currentlyDragging = null;
-                RemoveHighlightTiles();
-            }*/
-            #endregion
         }
 
 
@@ -691,7 +674,7 @@ public class ChessGen_Test : ChessGenerator, IMainBoardInfo
         if (!pieceManager.IsCoordinateInList(currentHover))
         {
             currentHover = hHover;
-
+            Debug.Log("New Hover Set");
             pieceManager.SwapLayerServerRpc(currentHover.X, currentHover.Y, "Hover", OwnerClientId);
 
         }

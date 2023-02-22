@@ -148,8 +148,15 @@ public List<Rook> rooks=new List<Rook>();
     public bool IsInCheck()
     {
         bool b = false;
-        ChessPieceConnection conn = ChessPieceManager.instance.GetChesspieceConnection(new Points(currentX, currentY));
-        if(conn.inCheck.Count > 0)
+        if (chessManager != null)
+        {
+            Debug.Log("faulty");
+            return b;
+        }
+        ChessPieceConnection conn = chessManager.GetChesspieceConnection(new Points(currentX, currentY));
+        if (conn == null)
+            return b;
+        if (conn.inCheck.Count > 0)
         {
             for (int i = 0; i < conn.inCheck.Count; i++)
             {
@@ -160,7 +167,7 @@ public List<Rook> rooks=new List<Rook>();
             }
         }
 
-            return b;
+        return b;
     }
 
 
