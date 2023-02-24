@@ -2,17 +2,17 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Unity.Netcode;
+using System.Linq;
 
 public class ChessPieceManager : NetworkBehaviour
 {
     public static ChessPieceManager instance;
     public List<Points> PointList = new List<Points>();
+    public List<GameObject> ObjectList=new List<GameObject> ();
     public List<Chesspiece> activeChesspieces = new List<Chesspiece>();
     public Dictionary<GameObject, Points> Pointers = new Dictionary<GameObject, Points>();
     public Dictionary<Points, GameObject> Tiles = new Dictionary<Points, GameObject>(new Points.EqualityComparer());
     public Dictionary<Points, Chesspiece> occupiedTiles = new Dictionary<Points, Chesspiece>(new Points.EqualityComparer());
-
-    public Dictionary<SpecialMove, Chesspiece> spiecalPiecePoint = new Dictionary<SpecialMove, Chesspiece>();
     // Start is called before the first frame update
     void Awake()
     {
@@ -34,15 +34,54 @@ public class ChessPieceManager : NetworkBehaviour
         instance = this;
     }
 
+    #region Create Coordinate System
+
     public void AddPoints(int x, int y, GameObject chesspiece)
     {
         Points newPoint = new Points(x, y);
         if (!Pointers.ContainsKey(chesspiece))
             Pointers.Add(chesspiece, newPoint);
-        if (!Tiles.ContainsKey(newPoint))
-            Tiles.Add(newPoint, chesspiece);
-        //PointList.Add(newPoint);
     }
+
+    public void AdjustPoints(int x, int y, GameObject chesspiece)
+    {
+        Points newPoint = new Points(x, y);
+        #region Previous Iteration
+        //basic setup didn't work all the way
+        /*if (Tiles.ContainsKey(newPoint))
+        {
+            Debug.Log(chesspiece.name + "'s changed location: " + newPoint.X + ", " + newPoint.Y);
+            Tiles[newPoint] = chesspiece;
+        }
+        else if (!Tiles.ContainsKey(newPoint))
+        {
+            Debug.Log("Before " + Tiles.Count);
+            Tiles.Remove(Pointers[chesspiece]);
+            Debug.Log(chesspiece.name + "'s new location: " + newPoint.X + ", " + newPoint.Y);
+            Tiles.Add(newPoint, chesspiece);
+            Debug.Log("Same " + Tiles.Count);
+        }*/
+
+        // reversal effect didn't work
+        /*Tiles.Clear();
+        Tiles = Pointers.Reverse();
+        Debug.Log("Same " + Tiles.Count);
+        PointList = new List<Points>(Tiles.Keys);
+        ObjectList=new List<GameObject>(Tiles.Values);*/
+        #endregion
+        Pointers[chesspiece] = newPoint;
+    }
+
+    public void SetupTiles()
+    {
+        foreach (GameObject tile in Pointers.Keys)
+        {
+            if (!Tiles.ContainsKey(Pointers[tile]))
+                Tiles.Add(Pointers[tile], tile);
+        }
+    }
+
+    #endregion
 
     public GameObject GetChesspieceGameObject(Points currentPoint)
     {
@@ -89,26 +128,7 @@ public class ChessPieceManager : NetworkBehaviour
         return Tiles.ContainsKey(currentPoint);
     }
 
-    public void CreatePointList()
-    {
-        PointList = new List<Points>(Pointers.Values);
-    }
 
-    public void AdjustPoints(int x, int y, GameObject chesspiece)
-    {
-        Points newPoint = new Points(x, y);
-        if (!Pointers.ContainsKey(chesspiece))
-            return;
-        if (!Tiles.ContainsKey(newPoint))
-        {
-            Tiles.Remove(Pointers[chesspiece]);
-            Tiles.Add(newPoint, chesspiece);
-            Debug.Log(Tiles.Count);
-        }
-        else
-            Tiles[newPoint] = chesspiece;
-        Pointers[chesspiece] = newPoint;
-    }
 
     public void SetActiveMoveList()
     {
@@ -167,7 +187,10 @@ public class ChessPieceManager : NetworkBehaviour
 
         Points currentPoint = new Points(x, y);
         if (!Tiles.ContainsKey(currentPoint))
+        {
+            Debug.Log(currentPoint.X + ", " + currentPoint.Y + " isn't here");
             return;
+        }
         GetChesspieceConnection(currentPoint).SwapLayersClientRpc(c, clientRpcParams);
     }
 
@@ -203,5 +226,13 @@ public class ChessPieceManager : NetworkBehaviour
             pawnd.ConvertToQueenServerRpc();
         }
         cp.ReturnPositionServerRpc(pos);
+    }
+}
+
+public static class Extensions
+{
+    public static Dictionary<V, K> Reverse<K, V>(this IDictionary<K, V> dict)
+    {
+        return dict.ToDictionary(x => x.Value, x => x.Key);
     }
 }

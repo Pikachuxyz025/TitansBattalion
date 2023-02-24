@@ -18,7 +18,7 @@ public enum SetMode
 
 
 
-public class ChessGen_Test : ChessGenerator, IMainBoardInfo
+public class Player : ChessGenerator, IMainBoardInfo
 {
     [Header("Editor Filled Variables")]
    [SerializeField] private ChessPieceManager pieceManager;
@@ -500,10 +500,6 @@ public class ChessGen_Test : ChessGenerator, IMainBoardInfo
                 break;
         }
     }
-    bool IsBoardWithinFrame(int x, int y)
-    {
-        return x < y;
-    }
 
     public void InsertMainBoardInfo(int x, int y)
     {
@@ -576,77 +572,11 @@ public class ChessGen_Test : ChessGenerator, IMainBoardInfo
             Points hitPosition = connectionContact.CurrentTilePoint();//chessboard.LookupTileIndex(info.transform.gameObject);
             if (!connectionContact.isConnected)
                 return;
-            TestingXYServerRpc(currentHover.X, currentHover.Y, hitPosition.X, hitPosition.Y);
-            #region set
-            // If we're hovering a tile after not hovering any tiles
-            /*if (!pieceManager.IsCoordinateInList(currentHover))//Points.DualEquals(currentHover, new Points(-1, -1)))
-            {
-                currentHover = hitPosition;
-                //chessboard.tiles[hitPosition.X, hitPosition.Y]
-                //pieceManager.GetChesspieceGameObject(currentHover).layer = LayerMask.NameToLayer("Hover");
-                pieceManager.SwapLayerServerRpc(currentHover.X,currentHover.Y, "Hover");
-                //NetworkObject currenthovergaemobject = pieceManager.GetChesspieceGameObject(currentHover).GetComponent<NetworkObject>();
-                //LayerMaskClientRpc(currenthovergaemobject,"Hover");
-            }
-
-            // If we were already hovering a tile, change the previous one
-            if (!Points.DualEquals(currentHover, hitPosition))
-            {
-                //chessboard.tiles[currentHover.X, currentHover.Y]
-                //pieceManager.GetChesspieceGameObject(currentHover).layer = (ContainsVaildMove(ref availableMoves, currentHover)) ? LayerMask.NameToLayer("Highlight") : LayerMask.NameToLayer("Tile");
-                //NetworkObject currenthovergaemobject = pieceManager.GetChesspieceGameObject(currentHover).GetComponent<NetworkObject>();
-
-
-
-                if (ContainsVaildMove(ref availableMoves, currentHover))
-                    pieceManager.SwapLayerServerRpc(currentHover.X,currentHover.Y, "Highlight");
-                else
-                    pieceManager.SwapLayerServerRpc(currentHover.X,currentHover.Y, "Tile");
-
-                currentHover = hitPosition;
-                chessboard.tiles[hitPosition.X, hitPosition.Y]
-                //Debug.Log(string.Format("Hit Position X:{0}, Y:{1}", hitPosition.X, hitPosition.Y));
-                //pieceManager.GetChesspieceGameObject(hitPosition).layer = LayerMask.NameToLayer("Hover");
-                pieceManager.SwapLayerServerRpc(hitPosition.X, hitPosition.Y, "Hover");
-                //NetworkObject hithovergaemobject = pieceManager.GetChesspieceGameObject(hitPosition).GetComponent<NetworkObject>();
-                //LayerMaskClientRpc(hithovergaemobject, "Hover");
-            }
-            //if we press down on the mouse
-            if (Input.GetMouseButtonDown(0))
-            {
-                CurrentDrag(hitPosition.X, hitPosition.Y);
-                //if (pieceManager.GetChesspieceGameObject(hitPosition) != null)
-                //{
-                //    // Is it our turn
-                //    if (true)
-                //    {
-
-                //        currentlyDragging = pieceManager.GetChesspieceConnection(hitPosition).GetOccupiedPiece();
-                //        if (currentlyDragging != null)
-                //            // Get List of where I can go, highlight list as well
-                //            availableMoves = currentlyDragging.GetAvailableMoves();
-                //        HighlightTiles();
-                //    }
-                //}
-            }
-
-            //if we are releasing the mouse
-            if (currentlyDragging != null && Input.GetMouseButtonUp(0))
-            {
-                ReleaseDrag(hitPosition.X, hitPosition.Y);
-                //Points priorPosition = new Points(currentlyDragging.currentX, currentlyDragging.currentY);
-                //bool validMove = MoveTo(currentlyDragging, hitPosition); ;
-                //if (!validMove)
-                //    currentlyDragging.ReturnPositionServerRpc(pieceManager.GetNewPiecePosition(priorPosition));
-
-                //currentlyDragging = null;
-                //RemoveHighlightTiles();
-            }*/
-            #endregion
+            SetCurrentHoverServerRpc(currentHover.X, currentHover.Y, hitPosition.X, hitPosition.Y);
         }
         else
         {
-            TestingYXServerRpc();
+            OutsideBoardServerRpc();
         }
 
 
@@ -665,7 +595,7 @@ public class ChessGen_Test : ChessGenerator, IMainBoardInfo
         }
     }
     [ServerRpc]
-    void TestingXYServerRpc(int cX, int cY, int hX, int hY)
+    void SetCurrentHoverServerRpc(int cX, int cY, int hX, int hY)
     {
         Points cHover = new Points(cX, cY);
         Points hHover = new Points(hX, hY);
@@ -674,7 +604,7 @@ public class ChessGen_Test : ChessGenerator, IMainBoardInfo
         if (!pieceManager.IsCoordinateInList(currentHover))
         {
             currentHover = hHover;
-            Debug.Log("New Hover Set");
+            Debug.Log("New Hover Set: " + currentHover.X + ", " + currentHover.Y);
             pieceManager.SwapLayerServerRpc(currentHover.X, currentHover.Y, "Hover", OwnerClientId);
 
         }
@@ -688,7 +618,7 @@ public class ChessGen_Test : ChessGenerator, IMainBoardInfo
                 pieceManager.SwapLayerServerRpc(currentHover.X, currentHover.Y, "Tile", OwnerClientId);
 
             currentHover = hHover;
-
+            Debug.Log("New Hover Changed: " + currentHover.X + ", " + currentHover.Y);
             pieceManager.SwapLayerServerRpc(hHover.X, hHover.Y, "Hover", OwnerClientId);
 
         }
@@ -713,20 +643,26 @@ public class ChessGen_Test : ChessGenerator, IMainBoardInfo
     }
 
     [ServerRpc]
-    void TestingYXServerRpc()
+    void OutsideBoardServerRpc()
     {
+        // that the current hover position and set the tag back to the original tag
         if (pieceManager.IsCoordinateInList(currentHover))
         {
+             // whether that tag is highlight
             if (ContainsVaildMove(ref availableMoves, currentHover) || ContainsVaildMove(ref availableSpecialMoves, currentHover))
                 pieceManager.SwapLayerServerRpc(currentHover.X, currentHover.Y, "Highlight", OwnerClientId);
             else
-                pieceManager.SwapLayerServerRpc(currentHover.X, currentHover.Y, "Tile", OwnerClientId);
-            currentHover = new Points(1984987, 51684);
+                pieceManager.SwapLayerServerRpc(currentHover.X, currentHover.Y, "Tile", OwnerClientId); // or the tag is Tile
+            // identify current hover out the range of the board
+            currentHover = new Points(1984987, 51684); 
         }
 
+       // If we aren't carrying the object anymore or if we let go of the object we're holding
         if (currentlyDragging != null && !setCurrentDrag)
         {
+            // the position the object was originally at
             Points priorPosition = new Points(currentlyDragging.currentX, currentlyDragging.currentY);
+            // move the object back to that position
             currentlyDragging.ReturnPositionServerRpc(pieceManager.GetNewPiecePosition(priorPosition));
             currentlyDragging = null;
             RemoveHighlightTilesServerRpc();

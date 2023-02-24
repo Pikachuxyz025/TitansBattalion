@@ -148,7 +148,7 @@ public List<Rook> rooks=new List<Rook>();
     public bool IsInCheck()
     {
         bool b = false;
-        if (chessManager != null)
+        if (chessManager == null)
         {
             Debug.Log("faulty");
             return b;

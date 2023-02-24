@@ -28,12 +28,12 @@ public class GameManager : NetworkBehaviour
     [SerializeField] private ChessboardManager chessboardManager;
     [SerializeField] public GameUIManager uiManager;
 
-    public List<ChessGen_Test> playerList = new List<ChessGen_Test>();
-    [SerializeField] private List<ChessGen_Test> playerActiveList = new List<ChessGen_Test>();
+    public List<Player> playerList = new List<Player>();
+    [SerializeField] private List<Player> playerActiveList = new List<Player>();
     public int mainBoardId;
 
     [SerializeField] private NetworkVariable<bool> gameStarted=new NetworkVariable<bool>(false);
-    [SerializeField] private ChessGen_Test playerPrefab;
+    [SerializeField] private Player playerPrefab;
     [SerializeField] private DataSend dataSend;
     public GameState currentState;
     private bool isRestarting=false;
@@ -78,12 +78,12 @@ public class GameManager : NetworkBehaviour
     {
         var spawn = Instantiate(playerPrefab);
 
-        ChessGen_Test chessGen = spawn.GetComponent<ChessGen_Test>();
+        Player chessGen = spawn.GetComponent<Player>();
         playerList.Add(chessGen);
         chessGen.SetupVariables(DataSend.boardData, playerList.IndexOf(chessGen) + 1, chessPieceManager, chesGen);
         spawn.NetworkObject.SpawnWithOwnership(playerId);
         SetClientRpc(spawn.NetworkObject,playerId);
-        ChessGen_Test.OnSetModeSet += StartGameServerRpc;
+        Player.OnSetModeSet += StartGameServerRpc;
         playerCount++;
     }
 
@@ -93,7 +93,7 @@ public class GameManager : NetworkBehaviour
     {
         if (target.TryGet(out NetworkObject targetObject))
         {
-            ChessGen_Test chessGen = targetObject.GetComponent<ChessGen_Test>();
+            Player chessGen = targetObject.GetComponent<Player>();
         }
     }
 
@@ -119,7 +119,7 @@ public class GameManager : NetworkBehaviour
 
     }
 
-    public void CheckGameOver(ChessGen_Test chess)
+    public void CheckGameOver(Player chess)
     {
         if (playerActiveList.Contains(chess))
         {
@@ -129,7 +129,7 @@ public class GameManager : NetworkBehaviour
         if (playerActiveList.Count == 1)
         {
             playerActiveList[0].currentSetModeNet.Value = SetMode.GameOver;
-            foreach (ChessGen_Test player in playerList)
+            foreach (Player player in playerList)
             {
                 player.CheckMateClientRpc(playerActiveList[0].teamNumber.Value);
             }
@@ -139,7 +139,7 @@ public class GameManager : NetworkBehaviour
 
     private bool CheckForGameRestart()
     {
-        foreach (ChessGen_Test player in playerList)
+        foreach (Player player in playerList)
         {
             if (!player.retryBool.Value)
                 return false;
@@ -166,7 +166,7 @@ public class GameManager : NetworkBehaviour
 
     private bool CheckForGameEnd()
     {
-        foreach (ChessGen_Test player in playerList)
+        foreach (Player player in playerList)
         {
             if (player.endBool.Value)
                 return true;
@@ -192,7 +192,7 @@ public class GameManager : NetworkBehaviour
         {
             for (int i = 0; i < playerList.Count; i++)
             {
-                ChessGen_Test player = playerList[i];
+                Player player = playerList[i];
                 playerList[i] = null;
                 if (player != null)
                 {
@@ -220,9 +220,10 @@ public class GameManager : NetworkBehaviour
         {
             turnNumber = 0;
             playerList[turnNumber].isMyTurnNet.Value = true;
+            chessPieceManager.SetupTiles();
             chessPieceManager.SetTilesInCheck();
             gameStarted.Value = true;
-            ChessGen_Test.OnSetModeSet -= StartGameServerRpc;
+            Player.OnSetModeSet -= StartGameServerRpc;
         }
     }
 
@@ -233,7 +234,7 @@ public class GameManager : NetworkBehaviour
 
     private bool CheckSetMode()
     {
-        foreach (ChessGen_Test chester in playerList)
+        foreach (Player chester in playerList)
         {
             if (chester.currentSetModeNet.Value != SetMode.Set)
                 return false;

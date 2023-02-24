@@ -50,7 +50,7 @@ public class Points: IEquatable<Points>
         }
         public int GetHashCode(Points x)
         {
-            return x.X ^ x.Y;
+            return x.X.GetHashCode() ^ x.Y.GetHashCode();
         }
     }
 }

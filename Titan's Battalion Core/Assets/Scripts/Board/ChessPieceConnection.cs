@@ -6,7 +6,7 @@ using System;
 
 public class ChessPieceConnection : NetworkBehaviour
 {
-   
+
     public NetworkVariable<int> GridX = new NetworkVariable<int>(-1), GridY = new NetworkVariable<int>(-1);
     public List<int> inCheck = new List<int>();
     public bool isConnected = false;
@@ -39,10 +39,8 @@ public class ChessPieceConnection : NetworkBehaviour
         gameObject.layer = LayerMask.NameToLayer(c);
     }
 
-    public void SwapLayers(string c)
-    {
-        gameObject.layer=LayerMask.NameToLayer(c);
-    }
+    public void SwapLayers(string c) => gameObject.layer = LayerMask.NameToLayer(c);
+
 
     [ClientRpc]
     public void GenerateCoordinatesClientRpc(int x, int y)
@@ -70,7 +68,7 @@ public class ChessPieceConnection : NetworkBehaviour
         //ChessPieceManager.instance.AddPoints(x, y, gameObject);
     }
 
-    public void ChangeGridValue(int x,int y,int id)
+    public void ChangeGridValue(int x, int y, int id)
     {
         GridX.Value = x;
         GridY.Value = y;
@@ -121,36 +119,14 @@ public class ChessPieceConnection : NetworkBehaviour
         }
     }
 
-    public void SetOccupiedPiece(Chesspiece cp)
-    {
-        occupiedChesspiece = cp;
-    }
+    public void SetOccupiedPiece(Chesspiece cp) => occupiedChesspiece = cp;
 
-    [ClientRpc]
-    public void NullPieceClientRpc()
-    {
-        occupiedChesspiece = null;
-    }
-
-    [ClientRpc] 
-    public void AlterGridClientRpc(int x, int y)
-    {
-        GridX.Value += x;
-        GridY.Value += y;
-        ChessPieceManager.instance.AdjustPoints(GridX.Value, GridY.Value, this.gameObject);
-    }
-
-    [ServerRpc]
-    public void AlterGridServerRpc(int x, int y)
-    {
-        AlterGridClientRpc(x, y);
-    }
 
     public void AlterGrid(int x, int y)
     {
         GridX.Value += x;
         GridY.Value += y;
-        Debug.Log(gameObject.name + "'s new location: " + GridX.Value + ", " + GridY.Value);
+
         ChessPieceManager.instance.AdjustPoints(GridX.Value, GridY.Value, this.gameObject);
     }
 }
