@@ -23,6 +23,8 @@ public class GameManager : NetworkBehaviour
     public static event Action<GameState> OnAfterStateChanged;
     public static event Action GameReset;
     public static event Action GameEnded;
+
+
     [SerializeField] private ChessPieceManager chessPieceManager;
     [SerializeField] private ChessboardGenerator chesGen;
     [SerializeField] private ChessboardManager chessboardManager;
@@ -35,11 +37,13 @@ public class GameManager : NetworkBehaviour
     [SerializeField] private NetworkVariable<bool> gameStarted=new NetworkVariable<bool>(false);
     [SerializeField] private Player playerPrefab;
     [SerializeField] private DataSend dataSend;
+
     public GameState currentState;
     private bool isRestarting=false;
     public static GameManager instance;
     private int playerCount = 0;
     private int turnNumber;
+
     private void Awake()
     {
         instance = this;
@@ -48,7 +52,7 @@ public class GameManager : NetworkBehaviour
         //GameEnded += LeavingGame;
     }
 
-    public Chessboard_Testing GetMainBoard()
+    public ChessboardTemplate GetMainBoard()
     {
         return chesGen.chessboard;
     }
@@ -82,9 +86,12 @@ public class GameManager : NetworkBehaviour
         playerList.Add(chessGen);
         chessGen.SetupVariables(DataSend.boardData, playerList.IndexOf(chessGen) + 1, chessPieceManager, chesGen);
         spawn.NetworkObject.SpawnWithOwnership(playerId);
-        SetClientRpc(spawn.NetworkObject,playerId);
+       // SetClientRpc(spawn.NetworkObject,playerId);
         Player.OnSetModeSet += StartGameServerRpc;
         playerCount++;
+
+        if (playerCount > 1)        
+            SetupGameServerRpc();        
     }
 
 
@@ -114,6 +121,8 @@ public class GameManager : NetworkBehaviour
 
         playerList[turnNumber].isMyTurnNet.Value = true;
 
+        if (!gameStarted.Value)
+            return;
         chessPieceManager.SetTilesInCheck();
         chessPieceManager.SetActiveMoveList();
 
@@ -213,18 +222,26 @@ public class GameManager : NetworkBehaviour
     }
 
 
+    [ServerRpc(RequireOwnership =false)]
+    public void SetupGameServerRpc()
+    {
+        turnNumber = 1;
+        playerList[turnNumber].isMyTurnNet.Value = true;
+    }
+
     [ServerRpc(RequireOwnership = false)]
     public void StartGameServerRpc()
     {
         if (CheckSetMode())
         {
-            turnNumber = 0;
-            playerList[turnNumber].isMyTurnNet.Value = true;
+            SetPlayerTurnServerRpc();
             chessPieceManager.SetupTiles();
             chessPieceManager.SetTilesInCheck();
             gameStarted.Value = true;
             Player.OnSetModeSet -= StartGameServerRpc;
         }
+        else
+            SetPlayerTurnServerRpc();
     }
 
     public bool HasGameStarted()

@@ -5,7 +5,7 @@ using UnityEngine;
 
 public class ChessGenerator : NetworkBehaviour
 {
-    public Chessboard_Testing chessboard;
+    public ChessboardTemplate chessboard;
     [SerializeField] protected GameObject piece;
     public Dictionary<Points, GameObject> setupTiles = new Dictionary<Points, GameObject>(new Points.EqualityComparer());
     public GameObject[,] tiles;
@@ -73,7 +73,7 @@ public class ChessGenerator : NetworkBehaviour
 
 
 
-    public void SetChessboard(Chessboard_Testing newChess) => chessboard = newChess;
+    public void SetChessboard(ChessboardTemplate newChess) => chessboard = newChess;
 
     protected virtual GameObject GenerateSingleTile( ref int x, ref int y)
     {

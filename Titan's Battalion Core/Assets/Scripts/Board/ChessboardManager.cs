@@ -4,8 +4,8 @@ using UnityEngine;
 
 public class ChessboardManager : MonoBehaviour
 {
-    [SerializeField] private List<Chessboard_Testing> mainBoardList = new List<Chessboard_Testing>();
-    [SerializeField] private List<Chessboard_Testing> armyBoardList = new List<Chessboard_Testing>();
+    [SerializeField] private List<ChessboardTemplate> mainBoardList = new List<ChessboardTemplate>();
+    [SerializeField] private List<ChessboardTemplate> armyBoardList = new List<ChessboardTemplate>();
     public GameObject[,] tiles;
     public static ChessboardManager instance;
 

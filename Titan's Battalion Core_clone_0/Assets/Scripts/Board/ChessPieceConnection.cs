@@ -8,7 +8,7 @@ public class ChessPieceConnection : NetworkBehaviour
 {
 
     public NetworkVariable<int> GridX = new NetworkVariable<int>(-1), GridY = new NetworkVariable<int>(-1);
-    public List<int> inCheck = new List<int>();
+    public List<Chesspiece> inCheck = new List<Chesspiece>();
     public bool isConnected = false;
     public Pawn SkippedPawnd = null;
     public GameObject pieceSetPoint;
@@ -26,7 +26,21 @@ public class ChessPieceConnection : NetworkBehaviour
     {
         isConnected = newValue;
     }
-
+    public bool IsInCheck(int team)
+    {
+        bool b = false;
+        if (inCheck.Count > 0)
+        {
+            for (int i = 0; i < inCheck.Count; i++)
+            {
+                if (inCheck[i].team == team)
+                    continue;
+                else
+                    b = true;
+            }
+        }
+        return b;
+    }
     public void ConfigureBoard()
     {
         isConnected = true;

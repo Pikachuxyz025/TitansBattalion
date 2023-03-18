@@ -48,6 +48,9 @@ public class Chesspiece : NetworkBehaviour
     [HideInInspector] public List<Points> addedPoints;
     [SerializeField] protected List<Points> specialPoints = new List<Points>();
     [SerializeField] protected List<Points> firstMovePoints = new List<Points>();
+
+    [SerializeField] protected NetworkVariable<GameMode> currentGameMode = new NetworkVariable<GameMode>(GameMode.None);
+
     public SpecialMove specialMove = SpecialMove.None;
 
     private void Awake()
@@ -55,6 +58,13 @@ public class Chesspiece : NetworkBehaviour
         netCurrentX.OnValueChanged += ChangeX;
         netCurrentY.OnValueChanged += ChangeY;
         chessManager = ChessPieceManager.instance;
+    }
+
+    public void SetGameMode(GameMode newMode) => currentGameMode.Value = newMode;
+
+   protected bool CurrentPieceCheck(Points p)
+    {
+        return (chessManager.GetChesspieceConnection(p).IsInCheck(team));
     }
 
     private void ChangeY(int previousValue, int newValue)
@@ -71,7 +81,32 @@ public class Chesspiece : NetworkBehaviour
     public void SetupPieceClientRpc(int teamNum)
     {
         team = teamNum;
-    } 
+    }
+
+    public bool IsInCheck()
+    {
+        bool b = false;
+        if (chessManager == null)
+        {
+            Debug.Log("faulty");
+            return b;
+        }
+        ChessPieceConnection conn = chessManager.GetChesspieceConnection(new Points(currentX, currentY));
+        if (conn == null)
+            return b;
+        /*if (conn.inCheck.Count > 0)
+        {
+            for (int i = 0; i < conn.inCheck.Count; i++)
+            {
+                if (conn.inCheck[i].team == team)
+                    continue;
+                else
+                    b = true;
+            }
+        }*/
+        b = conn.IsInCheck(team);
+        return b;
+    }
 
     public void AddActivePiece()
     {
@@ -110,22 +145,22 @@ public class Chesspiece : NetworkBehaviour
 
     public override void OnDestroy()
     {
-        ChessPieceManager che=ChessPieceManager.instance;
-        if(che.activeChesspieces.Contains(this))
-         che.activeChesspieces.Remove(this); 
+        ChessPieceManager che = ChessPieceManager.instance;
+        if (che.activeChesspieces.Contains(this))
+            che.activeChesspieces.Remove(this);
     }
 
     protected void AddInCheck(Points p)
     {
-        if (!chessManager.GetChesspieceConnection(p).inCheck.Contains(team))
-            chessManager.GetChesspieceConnection(p).inCheck.Add(team);
+        if (!chessManager.GetChesspieceConnection(p).inCheck.Contains(this))
+            chessManager.GetChesspieceConnection(p).inCheck.Add(this);
     }
 
 
     public virtual List<Points> GetAvailableMoves()
     {
         List<Points> newMoves = new List<Points>();
-;
+
         switch (type)
         { 
             case SetType.Manual:
@@ -460,54 +495,6 @@ public class Chesspiece : NetworkBehaviour
         return newMoves;
     }
 
-    /*protected void Set(ref List<Points> moves,Points p)
-    {
-        ChessPieceManager chessManager = ChessPieceManager.instance;
-        if (!chessManager.IsCoordinateInList(p))
-            return;
-        if (chessManager.IsOccupied(p))
-        {
-            if (chessManager.GetOccupiedPiece(p).team != team)
-               moves.Add(p);
-            return;
-        }
-       moves.Add(p);
-    }
-
-    protected void AddPoint(ref List<Points> moves,LocationStatus status,Points p)
-    {
-        if (status == LocationStatus.IsInvalid || status == LocationStatus.HasAlly)
-            return;
-        if (status == LocationStatus.HasEnemy)
-        {
-            moves.Add(p);
-            return;
-        }
-        moves.Add(p);
-    }
-
-    protected void CheckLocationStatus(Points p, out LocationStatus status)
-    {
-        ChessPieceManager chessManager = ChessPieceManager.instance;
-
-        if (!chessManager.IsCoordinateInList(p))
-        {
-            status = LocationStatus.IsInvalid;
-            return;
-        }
-
-        if (chessManager.IsOccupied(p))
-        {
-            if (chessManager.GetOccupiedPiece(p).team != team)
-            {
-                status = LocationStatus.HasEnemy;
-                return;
-            }
-            status = LocationStatus.HasAlly;
-            return;
-        }
-        status = LocationStatus.IsEmpty;
-    }*/
 
     public virtual void SetScale(Vector3 scale, bool force = false)
     {

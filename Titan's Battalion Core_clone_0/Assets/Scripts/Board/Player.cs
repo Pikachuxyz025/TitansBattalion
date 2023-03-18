@@ -29,7 +29,7 @@ public class Player : ChessGenerator, IMainBoardInfo
     [SerializeField] private TextMeshProUGUI whoWin;
     [SerializeField] private TMP_Dropdown dropdown;
     [SerializeField] private GameObject checkmateButton;
-    [SerializeField] private List<Chessboard_Testing> armyBoardList = new List<Chessboard_Testing>();
+    [SerializeField] private List<ChessboardTemplate> armyBoardList = new List<ChessboardTemplate>();
     [SerializeField] private float yoffset = .2f;
     [SerializeField] private float dragOffset = 1.5f;
 
@@ -214,6 +214,7 @@ public class Player : ChessGenerator, IMainBoardInfo
 
                 Chesspiece cp = setobject.GetComponent<Chesspiece>();
                 ChessPieceConnection tp = setupTiles[setPoint].GetComponent<ChessPieceConnection>();
+                cp.SetGameMode(currentGameMode.Value);
                 Vector3 pos = tp.pieceSetPoint.transform.position;
                 cp.SetPositionServerRpc(tp.GridX.Value, tp.GridY.Value, pos, true);
                 cp.gameObject.GetComponent<NetworkObject>().ChangeOwnership(OwnerClientId);
@@ -242,6 +243,7 @@ public class Player : ChessGenerator, IMainBoardInfo
         }
     }
     #endregion
+
 
     #region Ending The Game
 
@@ -337,6 +339,8 @@ public class Player : ChessGenerator, IMainBoardInfo
         switch (currentSetModeNet.Value)
         {
             case SetMode.NotSpawned:
+                if (!isMyTurn)
+                    return;
                 if (Input.GetKeyDown(KeyCode.C))
                 {
                     // Debugging based on player number
@@ -347,6 +351,8 @@ public class Player : ChessGenerator, IMainBoardInfo
                 }
                 break;
             case SetMode.Spawned:
+                if (!isMyTurn)
+                    return;
                 MoveChessboard();
                 if (Input.GetKeyDown(KeyCode.C))
                 {
@@ -545,7 +551,7 @@ public class Player : ChessGenerator, IMainBoardInfo
     }
 
 
-    public void SetupBoard(Chessboard_Testing chess)
+    public void SetupBoard(ChessboardTemplate chess)
     {
         chessboard = chess;
     }
@@ -604,9 +610,7 @@ public class Player : ChessGenerator, IMainBoardInfo
         if (!pieceManager.IsCoordinateInList(currentHover))
         {
             currentHover = hHover;
-            Debug.Log("New Hover Set: " + currentHover.X + ", " + currentHover.Y);
             pieceManager.SwapLayerServerRpc(currentHover.X, currentHover.Y, "Hover", OwnerClientId);
-
         }
 
         // If we were already hovering a tile, change the previous one
@@ -618,7 +622,6 @@ public class Player : ChessGenerator, IMainBoardInfo
                 pieceManager.SwapLayerServerRpc(currentHover.X, currentHover.Y, "Tile", OwnerClientId);
 
             currentHover = hHover;
-            Debug.Log("New Hover Changed: " + currentHover.X + ", " + currentHover.Y);
             pieceManager.SwapLayerServerRpc(hHover.X, hHover.Y, "Hover", OwnerClientId);
 
         }
@@ -838,10 +841,12 @@ public class Player : ChessGenerator, IMainBoardInfo
     {
         pieceManager.GetChesspieceConnection(hitPosition).SetOccupiedPiece(cp);
         pieceManager.GetChesspieceConnection(previousPosition).SetOccupiedPiece(null);
+        cp.hasMoved = true;
         pieceManager.PositionSinglePiece(cp, hitPosition);
 
         pieceManager.GetChesspieceConnection(s).SetOccupiedPiece(rook);
         pieceManager.GetChesspieceConnection(r).SetOccupiedPiece(null);
+        rook.hasMoved = true;
         pieceManager.PositionSinglePiece(rook, s);
     }
 
@@ -888,8 +893,6 @@ public class Player : ChessGenerator, IMainBoardInfo
         int x_R = 0;
         int y_R = 0;
         GameObject tileObject = Instantiate(piece);
-        //GameObject pieceSet = new GameObject(string.Format("PieceSpawnPoint"));
-        //pieceSet.transform.parent = tileObject.transform;
 
         // Add to setup tiles to setup piece placement later
         setupTiles.Add(new Points(x, y), tileObject);
@@ -904,47 +907,21 @@ public class Player : ChessGenerator, IMainBoardInfo
                 }
             }
         }
-
-
-        //Mesh mesh = new Mesh();
-        //tileObject.AddComponent<MeshFilter>().mesh = mesh;
-        //tileObject.AddComponent<MeshRenderer>().material = chessboard.tileMaterial;
-
-        //Vector3[] vertics = new Vector3[4];
-
         switch (teamNumber.Value)
         {
             case 1:
-                //pieceSet.transform.position = new Vector3(x + .5f, 0 + .1f, y + mainBoardTileCountY + .5f);
-                //vertics[0] = new Vector3((mainBoardOffsetX - x - 1) * tileSize, 0, (mainBoardOffsetY + (chessboard.tileCountY - 1) - y /*+ tileCountY*/) * tileSize);
-                //vertics[1] = new Vector3((mainBoardOffsetX - x - 1) * tileSize, 0, ((mainBoardOffsetY + (chessboard.tileCountY - 1) - y /*+ tileCountY*/) + 1) * tileSize);
-                //vertics[2] = new Vector3(((mainBoardOffsetX - x - 1) + 1) * tileSize, 0, (mainBoardOffsetY + (chessboard.tileCountY - 1) - y /*+ tileCountY*/) * tileSize);
-                //vertics[3] = new Vector3(((mainBoardOffsetX - x - 1) + 1) * tileSize, 0, ((mainBoardOffsetY + (chessboard.tileCountY - 1) - y /*+ tileCountY*/) + 1) * tileSize);
                 x_R = mainBoardOffsetX - x - 1;
                 y_R = mainBoardOffsetY + (chessboard.tileCountY - 1) - y;
                 break;
             case 2:
-                //pieceSet.transform.position = new Vector3(x + .5f, 0 + .1f, y + mainBoardTileCountY + .5f);
-                //vertics[0] = new Vector3((x) * tileSize, 0, (y - chessboard.tileCountY) * tileSize);
-                //vertics[1] = new Vector3((x) * tileSize, 0, ((y - chessboard.tileCountY) + 1) * tileSize);
-                //vertics[2] = new Vector3(((x) + 1) * tileSize, 0, (y - chessboard.tileCountY) * tileSize);
-                //vertics[3] = new Vector3(((x) + 1) * tileSize, 0, ((y - chessboard.tileCountY) + 1) * tileSize);
                 x_R = x;
                 y_R = y - chessboard.tileCountY;
                 break;
             case 3:
-                //vertics[0] = new Vector3((y + mainBoardOffsetX) * tileSize, 0, x * tileSize);
-                //vertics[1] = new Vector3((y + mainBoardOffsetX) * tileSize, 0, (x + 1) * tileSize);
-                //vertics[2] = new Vector3(((y + mainBoardOffsetX) + 1) * tileSize, 0, x * tileSize);
-                //vertics[3] = new Vector3(((y + mainBoardOffsetX) + 1) * tileSize, 0, (x + 1) * tileSize);
                 x_R = y + mainBoardOffsetX;
                 y_R = x;
                 break;
             case 4:
-                //vertics[0] = new Vector3((y - chessboard.tileCountY) * tileSize, 0, (mainBoardOffsetY - x - 1) * tileSize);
-                //vertics[1] = new Vector3((y - chessboard.tileCountY) * tileSize, 0, ((mainBoardOffsetY - x - 1) + 1) * tileSize);
-                //vertics[2] = new Vector3(((y - chessboard.tileCountY) + 1) * tileSize, 0, (mainBoardOffsetY - x - 1) * tileSize);
-                //vertics[3] = new Vector3(((y - chessboard.tileCountY) + 1) * tileSize, 0, ((mainBoardOffsetY - x - 1) + 1) * tileSize);
                 x_R = y - chessboard.tileCountY;
                 y_R = mainBoardOffsetY - x - 1;
                 break;

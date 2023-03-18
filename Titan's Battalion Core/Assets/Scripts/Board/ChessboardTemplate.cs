@@ -7,7 +7,7 @@ using UnityEditor;
 #endif
 
 [CreateAssetMenu(fileName = "New Board", menuName = "Setup/Boards")]
-public class Chessboard_Testing : ScriptableObject
+public class ChessboardTemplate : ScriptableObject
 {
     [Header("Art Stuff")]
     public Material tileMaterial;
@@ -49,14 +49,14 @@ public class Chessboard_Testing : ScriptableObject
 }
 
 #if UNITY_EDITOR
-[CustomEditor(typeof(Chessboard_Testing))]
+[CustomEditor(typeof(ChessboardTemplate))]
 public class Chessboard_Testing_Editor:Editor
 {
     public override void OnInspectorGUI()
     {
         DrawDefaultInspector();
 
-        Chessboard_Testing chessboard_Testing = (Chessboard_Testing)target;
+        ChessboardTemplate chessboard_Testing = (ChessboardTemplate)target;
 
         // draw checkbox for the bool
         chessboard_Testing.isArmy = EditorGUILayout.Toggle("Has Army?", chessboard_Testing.isArmy);

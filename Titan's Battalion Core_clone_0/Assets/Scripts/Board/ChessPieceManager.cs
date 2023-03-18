@@ -145,6 +145,7 @@ public class ChessPieceManager : NetworkBehaviour
     public void SetTilesInCheck()
     {
         ResetTiles();
+
         foreach (Chesspiece cp in activeChesspieces)
         {
             cp.GetAvailableMoves();

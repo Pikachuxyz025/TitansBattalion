@@ -28,6 +28,8 @@ public class Rook : Chesspiece
             return false;
         if (myKing.currentY != currentY)
             return false;
+        if (currentGameMode.Value == GameMode.Chess && hasMoved)
+            return false;
 
         Debug.Log(CheckCoordinateDistance(myKing.currentX, currentX));
 

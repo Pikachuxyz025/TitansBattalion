@@ -4,12 +4,12 @@ using UnityEngine;
 
 public class GameModeTerritory:MonoBehaviour
 {
-    public Chessboard_Testing[] grave;
+    public ChessboardTemplate[] grave;
     public GameMode[] set;
 
-    private Dictionary<GameMode, Chessboard_Testing> Territories()
+    private Dictionary<GameMode, ChessboardTemplate> Territories()
     {
-        Dictionary<GameMode, Chessboard_Testing> check = new Dictionary<GameMode, Chessboard_Testing>();
+        Dictionary<GameMode, ChessboardTemplate> check = new Dictionary<GameMode, ChessboardTemplate>();
         for (int i = 0; i < set.Length; i++)
         {
             check.Add(set[i], grave[i]);
@@ -17,7 +17,7 @@ public class GameModeTerritory:MonoBehaviour
         return check;
     }
 
-    public Chessboard_Testing GetTerritory(GameMode mode)
+    public ChessboardTemplate GetTerritory(GameMode mode)
     {
         if (Territories().ContainsKey(mode))
             return Territories()[mode];
