@@ -28,12 +28,6 @@ public class ChessPieceManager : NetworkBehaviour
         //Instanced();
     }
 
-    public void Instanced()
-    {
-        //Debug.Log("Show me tisd");
-        instance = this;
-    }
-
     #region Create Coordinate System
 
     public void AddPoints(int x, int y, GameObject chesspiece)
@@ -130,14 +124,15 @@ public class ChessPieceManager : NetworkBehaviour
 
 
 
-    public void SetActiveMoveList()
+    public void SetActiveMoveList(Player currentPlayer)
     {
-        foreach (Chesspiece cp in activeChesspieces)
+        foreach (Chesspiece chesspiece in activeChesspieces)
         {
-            if (cp is Pawn)
+            if (chesspiece is Pawn)
             {
-                Pawn pawnd = cp.GetComponent<Pawn>();
-                pawnd.AddToMoveList();
+                Pawn foundPawn = chesspiece.GetComponent<Pawn>();
+                if (foundPawn.IsThisTheControllingPlayer(currentPlayer))
+                    foundPawn.AddToMoveList();
             }
         }
     }
@@ -155,12 +150,12 @@ public class ChessPieceManager : NetworkBehaviour
     public void ResetTiles()
     {
         foreach (GameObject conn in Tiles.Values)
-            conn.GetComponent<ChessPieceConnection>().inCheck.Clear();
+            conn.GetComponent<ChessPieceConnection>().piecesThatHaveUsInCheck.Clear();
 
     }
 
     [ServerRpc(RequireOwnership = false)]
-    public void SwapLayerServerRpc(int x, int y, string c, ulong s = 0)
+    public void SwapLayerServerRpc(int x, int y, string layer, ulong s = 0)
     {
         ClientRpcParams clientRpcParams;
         if (s != 0)
@@ -192,7 +187,7 @@ public class ChessPieceManager : NetworkBehaviour
             Debug.Log(currentPoint.X + ", " + currentPoint.Y + " isn't here");
             return;
         }
-        GetChesspieceConnection(currentPoint).SwapLayersClientRpc(c, clientRpcParams);
+        GetChesspieceConnection(currentPoint).SwapLayersClientRpc(layer, clientRpcParams);
     }
 
     public GameObject SpawnSinglePiece(GameObject reference, int team)
@@ -207,8 +202,7 @@ public class ChessPieceManager : NetworkBehaviour
 
     public void PositionSinglePiece(Chesspiece cp, ChessPieceConnection dp)
     {
-        cp.currentY = dp.GridY.Value;
-        cp.currentX = dp.GridX.Value;
+        cp.SetNewCurrentPoints(dp.GridX.Value,dp.GridY.Value);
         Vector3 pos = dp.pieceSetPoint.transform.position;
 
         cp.ReturnPositionServerRpc(pos);
@@ -217,8 +211,7 @@ public class ChessPieceManager : NetworkBehaviour
     public void PositionSinglePiece(Chesspiece cp, Points pd)
     {
         ChessPieceConnection dp = GetChesspieceConnection(pd);
-        cp.currentY = dp.GridY.Value;
-        cp.currentX = dp.GridX.Value;
+        cp.SetNewCurrentPoints(dp.GridX.Value, dp.GridY.Value);
         Vector3 pos = dp.pieceSetPoint.transform.position;
 
         if (cp is Pawn)

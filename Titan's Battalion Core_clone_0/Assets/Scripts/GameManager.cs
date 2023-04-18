@@ -84,7 +84,7 @@ public class GameManager : NetworkBehaviour
 
         Player chessGen = spawn.GetComponent<Player>();
         playerList.Add(chessGen);
-        chessGen.SetupVariables(DataSend.boardData, playerList.IndexOf(chessGen) + 1, chessPieceManager, chesGen);
+        chessGen.SetupVariables(DataSend.boardData, playerList.IndexOf(chessGen) + 1, chesGen);
         spawn.NetworkObject.SpawnWithOwnership(playerId);
        // SetClientRpc(spawn.NetworkObject,playerId);
         Player.OnSetModeSet += StartGameServerRpc;
@@ -109,8 +109,8 @@ public class GameManager : NetworkBehaviour
     [ServerRpc(RequireOwnership = false)]
     public void SetPlayerTurnServerRpc()
     {
-
-        playerList[turnNumber].isMyTurnNet.Value = false;
+        playerList[turnNumber].NetworkIsMyTurn.Value = false;
+        chessPieceManager.SetActiveMoveList(playerList[turnNumber]);
 
         turnNumber++;
         if (turnNumber + 1 > playerCount)
@@ -119,13 +119,12 @@ public class GameManager : NetworkBehaviour
             SetPlayerTurnServerRpc();
 
 
-        playerList[turnNumber].isMyTurnNet.Value = true;
+        playerList[turnNumber].NetworkIsMyTurn.Value = true;
 
         if (!gameStarted.Value)
             return;
         chessPieceManager.SetTilesInCheck();
-        chessPieceManager.SetActiveMoveList();
-
+        playerList[turnNumber].EnterTurnServerRpc();
     }
 
     public void CheckGameOver(Player chess)
@@ -150,7 +149,7 @@ public class GameManager : NetworkBehaviour
     {
         foreach (Player player in playerList)
         {
-            if (!player.retryBool.Value)
+            if (!player.NetworkRetryBool.Value)
                 return false;
         }
         return true;
@@ -177,7 +176,7 @@ public class GameManager : NetworkBehaviour
     {
         foreach (Player player in playerList)
         {
-            if (player.endBool.Value)
+            if (player.NetworkEndBool.Value)
                 return true;
         }
         return false;
@@ -226,7 +225,7 @@ public class GameManager : NetworkBehaviour
     public void SetupGameServerRpc()
     {
         turnNumber = 1;
-        playerList[turnNumber].isMyTurnNet.Value = true;
+        playerList[turnNumber].NetworkIsMyTurn.Value = true;
     }
 
     [ServerRpc(RequireOwnership = false)]

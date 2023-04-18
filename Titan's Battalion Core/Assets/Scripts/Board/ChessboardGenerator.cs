@@ -7,10 +7,9 @@ using UnityEngine;
 
 public class ChessboardGenerator : ChessGenerator
 {
-    [SerializeField] ChessPieceManager pieceManager;
     public static ChessboardGenerator Instance;
 
-    [SerializeField] private GameModeMainBoard battlefield=new GameModeMainBoard();
+    [SerializeField] private GameModeMainBoard battlefield = new GameModeMainBoard();
     public delegate void ChangeValueDelegate(int NewX, int NewY);
     public ChangeValueDelegate ChangeValue;
 
@@ -45,7 +44,7 @@ public class ChessboardGenerator : ChessGenerator
     public void Generator()
     {
         SetMainBoardClientRpc();
-                GenerateAllTilesServerRpc(0);
+        GenerateAllTilesServerRpc(0);
     }
 
     [ClientRpc]

@@ -1,6 +1,6 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!1 &7897422313832122412
+--- !u!1 &1129620202532053857
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -8,50 +8,50 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 7522261902786940423}
-  - component: {fileID: 2887158526416004644}
-  - component: {fileID: 4819266002338572104}
-  - component: {fileID: 7118548846410941710}
-  - component: {fileID: 3797794673512511103}
-  - component: {fileID: -4415303811772055198}
-  - component: {fileID: -8790096807318512848}
+  - component: {fileID: 3165194373934345568}
+  - component: {fileID: 4151316773312811237}
+  - component: {fileID: 1476218143737932694}
+  - component: {fileID: 5638208859969583439}
+  - component: {fileID: 7582369146717947514}
+  - component: {fileID: -5092094429573363361}
+  - component: {fileID: -7580685984689030486}
   m_Layer: 0
-  m_Name: Pawn
+  m_Name: King
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &7522261902786940423
+--- !u!4 &3165194373934345568
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7897422313832122412}
+  m_GameObject: {fileID: 1129620202532053857}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 5.4, y: 2.4560337, z: -1.668119}
+  m_LocalPosition: {x: 5.5, y: 0, z: 9.5}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!33 &2887158526416004644
+--- !u!33 &4151316773312811237
 MeshFilter:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7897422313832122412}
+  m_GameObject: {fileID: 1129620202532053857}
   m_Mesh: {fileID: 10206, guid: 0000000000000000e000000000000000, type: 0}
---- !u!23 &4819266002338572104
+--- !u!23 &1476218143737932694
 MeshRenderer:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7897422313832122412}
+  m_GameObject: {fileID: 1129620202532053857}
   m_Enabled: 1
   m_CastShadows: 1
   m_ReceiveShadows: 1
@@ -65,7 +65,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: d28dee748e01cbe448f77406f585b03b, type: 2}
+  - {fileID: 2100000, guid: 1db239cf54d3c5a42873b1c9435774ac, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -87,13 +87,13 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!136 &7118548846410941710
+--- !u!136 &5638208859969583439
 CapsuleCollider:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7897422313832122412}
+  m_GameObject: {fileID: 1129620202532053857}
   m_Material: {fileID: 0}
   m_IsTrigger: 0
   m_Enabled: 1
@@ -101,82 +101,65 @@ CapsuleCollider:
   m_Height: 2
   m_Direction: 1
   m_Center: {x: 0.000000059604645, y: 0, z: -0.00000008940697}
---- !u!114 &3797794673512511103
+--- !u!114 &7582369146717947514
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7897422313832122412}
+  m_GameObject: {fileID: 1129620202532053857}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3f16be1d5093fa941b8b7924ada39650, type: 3}
+  m_Script: {fileID: 11500000, guid: b8bb7d11795af3d4eb7d1ab0bb04bd4b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   team: 0
-  isKing: 0
+  isKing: 1
   hasMoved: 0
   isPawn: 0
-  currentX: 0
-  currentY: 0
   chessManager: {fileID: 0}
   type: 1
   allDiagonal: 0
   allStraight: 0
   addedPoints:
-  - X: 0
+  - X: 1
     Y: 1
-  - X: 0
-    Y: -1
   - X: 1
     Y: 0
+  - X: 0
+    Y: 1
+  - X: -1
+    Y: 1
   - X: -1
     Y: 0
+  - X: 0
+    Y: -1
+  - X: -1
+    Y: -1
+  - X: 1
+    Y: -1
   specialPoints:
-  - X: -1
-    Y: 1
-  - X: 1
-    Y: 1
-  - X: -1
-    Y: -1
-  - X: 1
-    Y: -1
-  firstMovePoints:
-  - X: 0
-    Y: -1
-  - X: 0
-    Y: -2
-  - X: 0
-    Y: 1
-  - X: 0
-    Y: 2
-  - X: -1
-    Y: 0
   - X: -2
-    Y: 0
-  - X: 1
     Y: 0
   - X: 2
     Y: 0
+  - X: 0
+    Y: -2
+  - X: 0
+    Y: 2
+  firstMovePoints: []
+  currentGameMode:
+    m_InternalValue: 0
   specialMove: 0
-  moveList: []
-  convertableQueen: {fileID: 4648733261814811667, guid: b3b74b4bf5b8e1b44a09c69a209b2d68, type: 3}
-  takeoverPoints:
-  - X: 1
-    Y: -1
-  - X: -1
-    Y: -1
-  - X: 1
-    Y: 1
-  - X: -1
-    Y: 1
---- !u!114 &-4415303811772055198
+  rooks: []
+  targetingPieces: []
+--- !u!114 &-5092094429573363361
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7897422313832122412}
+  m_GameObject: {fileID: 1129620202532053857}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
@@ -186,13 +169,13 @@ MonoBehaviour:
   AlwaysReplicateAsRoot: 0
   DontDestroyWithOwner: 0
   AutoObjectParentSync: 1
---- !u!114 &-8790096807318512848
+--- !u!114 &-7580685984689030486
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7897422313832122412}
+  m_GameObject: {fileID: 1129620202532053857}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e96cb6065543e43c4a752faaa1468eb1, type: 3}

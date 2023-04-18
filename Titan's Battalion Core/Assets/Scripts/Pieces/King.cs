@@ -7,141 +7,6 @@ public class King : Chesspiece
     public List<Rook> rooks = new List<Rook>();
     public List<Chesspiece> targetingPieces = new List<Chesspiece>();
 
-    bool CanCastle(Points pointer)
-    {
-        bool b = true;
-        int a = 0;
-        bool isleft = false;
-        Rook rook = null;
-
-        //if either rook or king has moved castling will be unavailable
-        // if (hasMoved)
-        //return false;
-
-        if (rooks.Count == 0)
-            return false;
-
-
-
-
-
-
-
-        // account for multiple players based on team number
-        // if Pointer.X is negative go with rook on right
-
-        switch (team)
-        {
-            case 2:
-                ChessPieceManager manager = ChessPieceManager.instance;
-                if (pointer.X > currentX)
-                {
-                    a = 1;
-                    isleft = false;
-                    foreach (Rook rookie in rooks)
-                    {
-                        if (rookie.currentX > currentX)
-                            rook = rookie;
-                    }
-                }
-                // if Pointer.X is negative go with rook on the left
-                if (pointer.X < currentX)
-                {
-                    a = -1;
-                    isleft = true;
-                    foreach (Rook rookie in rooks)
-                    {
-                        if (rookie.currentX < currentX)
-                            rook = rookie;
-                    }
-                }
-                //if anything is in between the rook or the king the move will be unavailable
-                if (isleft)
-                {
-                    for (int i = currentX - 1; i > rook.currentX; i--)
-                    {
-                        Points p = new Points(i, currentY);
-                        if (manager.IsOccupied(p))
-                            return false;
-                    }
-                }
-                else
-                {
-                    for (int i = currentX + 1; i < rook.currentX; i++)
-                    {
-                        Points p = new Points(i, currentY);
-                        if (manager.IsOccupied(p))
-                            return false;
-                    }
-                }
-
-                if (manager.GetChesspieceConnection(new Points(currentX + a, currentY)).inCheck.Count > 1)
-                    return false;
-                break;
-            case 1:
-                manager = ChessPieceManager.instance;
-                if (pointer.X < currentX)
-                {
-                    a = 1;
-                    isleft = false;
-                    foreach (Rook rookie in rooks)
-                    {
-                        if (rookie.currentX < currentX)
-                            rook = rookie;
-                    }
-                }
-                // if Pointer.X is negative go with rook on the left
-                if (pointer.X > currentX)
-                {
-                    a = -1;
-                    isleft = true;
-                    foreach (Rook rookie in rooks)
-                    {
-                        if (rookie.currentX > currentX)
-                            rook = rookie;
-                    }
-                }
-                //if anything is in between the rook or the king the move will be unavailable
-                if (isleft)
-                {
-                    for (int i = currentX + 1; i < rook.currentX; i++)
-                    {
-                        Points p = new Points(i, currentY);
-                        if (manager.IsOccupied(p))
-                            return false;
-                    }
-                }
-                else
-                {
-                    for (int i = currentX - 1; i > rook.currentX; i--)
-                    {
-                        Points p = new Points(i, currentY);
-                        if (manager.IsOccupied(p))
-                            return false;
-                    }
-                }
-
-                if (manager.GetChesspieceConnection(new Points(currentX + a, currentY)).inCheck.Count > 1)
-                    return false;
-                break;
-            case 3:
-                manager = ChessPieceManager.instance;
-                break;
-            case 4:
-                manager = ChessPieceManager.instance;
-                break;
-        }
-
-        if (rook == null)
-            return false;
-
-
-        specialMove = SpecialMove.Castling;
-        //setRooks.Add(rook, new Points(currentX + a, currentY));
-        return b;
-    }
-
-
     bool CastlingCheck(Points p)
     {
         return IsInCheck() || (chessManager.GetChesspieceConnection(p).IsInCheck(team));
@@ -150,7 +15,7 @@ public class King : Chesspiece
     List<Chesspiece> PiecesThatHauntMe(Points p)
     {
         List<Chesspiece> chesses = new List<Chesspiece>();
-        foreach (Chesspiece piece in chessManager.GetChesspieceConnection(p).inCheck)
+        foreach (Chesspiece piece in chessManager.GetChesspieceConnection(p).piecesThatHaveUsInCheck)
         {
             if (piece != this && piece.team != team)
                 chesses.Add(piece);
@@ -182,7 +47,22 @@ public class King : Chesspiece
         return isCheckmateOfficial && IsInCheck() && !IsThereAWayOut();
     }
 
+    public bool SetCheckableList()
+    {
+        List<Chesspiece> dangerousChesspieces = new List<Chesspiece>();
+        if (IsInCheck(out dangerousChesspieces))
+        {
+            if (dangerousChesspieces.Count > 0)
 
+                Debug.Log("We're being targeted by " + dangerousChesspieces.Count);
+            playersCheckableList.AddKingTargets(dangerousChesspieces);
+
+        }
+        else
+            playersCheckableList.ResetKingTargets();
+
+        return IsInCheck();
+    }
 
     public override List<Points> GetAvailableMoves()
     {
@@ -194,23 +74,23 @@ public class King : Chesspiece
 
                 for (int i = 0; i < addedPoints.Count; i++)
                 {
-                    Points c = new Points(currentX + addedPoints[i].X, currentY + addedPoints[i].Y);
+                    Points accessablePoint = new Points(currentX + addedPoints[i].X, currentY + addedPoints[i].Y);
 
-                    if (!ChessPieceManager.instance.IsCoordinateInList(c))
+                    if (!ChessPieceManager.instance.IsCoordinateInList(accessablePoint))
                         continue;
-                    if (chessManager.IsOccupied(c))
-                        if (chessManager.GetOccupiedPiece(c).team == team)
+                    if (chessManager.IsOccupied(accessablePoint))
+                        if (chessManager.GetOccupiedPiece(accessablePoint).team == team)
                             continue;
-                    if (CurrentPieceCheck(c))
+                    if (CurrentPieceCheck(accessablePoint))
                     {
-                        if (PiecesThatHauntMe(c).Count != 0)
+                        if (PiecesThatHauntMe(accessablePoint).Count != 0)
                         {
-                            targetingPieces.AddRange(PiecesThatHauntMe(c));
+                            targetingPieces.AddRange(PiecesThatHauntMe(accessablePoint));
                             continue;
                         }
                     }
-                    AddInCheck(c);
-                    newMoves.Add(c);
+                    AddInCheck(accessablePoint);
+                    newMoves.Add(accessablePoint);
                 }
                 break;
             case SetType.Open:
@@ -378,142 +258,59 @@ public class King : Chesspiece
     public override List<Points> GetSpecialMoves()
     {
         List<Points> result = new List<Points>();
-
+        ChessPieceConnection specialPiece = new ChessPieceConnection();
         if (currentGameMode.Value == GameMode.Chess && hasMoved)
             return result;
 
         foreach (Rook rook in rooks)
         {
-            KingDirection set = new KingDirection();
-            if (rook.InRangeCheckX(out set))
+            KingDirection currentLookDirection = new KingDirection();
+            if (rook.InRangeCheckX(out currentLookDirection))
             {
-                int a = 0;
-                bool b = false;
                 // if true is the rook on my left or on my right?
-                switch (set)
+                switch (currentLookDirection)
                 {
                     case KingDirection.Left:
-
-                        a = -1;
-                        b = false;
-                        Points s = new Points(currentX + a, currentY);
-
-                        if (CastlingCheck(s))
+                        specialPiece = SpecialChesspiece(0, true, rook, -1);
+                        if (!specialPiece)
                             break;
-                        Debug.Log("Yo Left");
-                        // Make sure there's nothing in between us
-                        for (int i = currentX - 1; i > rook.currentX; i--)
-                        {
-                            Points p = new Points(i, currentY);
-                            if (chessManager.IsOccupied(p))
-                            {
-                                b = true;
-                                break;
-                            }
-                            Debug.Log("Left " + p.X + " and" + p.Y + " are not breaking");
-                        }
-                        if (b) break;
-
-                        Points c = new Points(currentX + specialPoints[0].X, currentY + specialPoints[0].Y);
-                        if (CastlingCheck(c))
-                            break;
-                        result.Add(c);
+                        Debug.Log("Found Left Piece");
+                        result.Add(specialPiece.CurrentTilePoint());
 
                         specialMove = SpecialMove.Castling;
                         break;
 
                     case KingDirection.Right:
-
-                        a = 1;
-                        b = false;
-                        s = new Points(currentX + a, currentY);
-
-                        if (CastlingCheck(s))
+                        specialPiece = SpecialChesspiece(1, true, rook, 1);
+                        if (!specialPiece)
                             break;
-                        Debug.Log("Yo Right");
-                        // Make sure there's nothing in between us
-                        for (int i = currentX + 1; i < rook.currentX; i++)
-                        {
-                            Points p = new Points(i, currentY);
-                            if (chessManager.IsOccupied(p))
-                            {
-                                b = true;
-                                break;
-                            }
-                        }
-                        if (b) break;
-
-                        c = new Points(currentX + specialPoints[1].X, currentY + specialPoints[1].Y);
-                        if (CastlingCheck(c))
-                            break;
-                        result.Add(c);
-
+                        Debug.Log("Found Right Piece");
+                        result.Add(specialPiece.CurrentTilePoint());
                         specialMove = SpecialMove.Castling;
                         break;
                 }
             }
 
-            if (rook.InRangeCheckY(out set) && currentGameMode.Value != GameMode.Chess)
+            if (rook.InRangeCheckY(out currentLookDirection) && currentGameMode.Value != GameMode.Chess)
             {
-                int a = 0;
-                bool b = false;
                 // if true is the rook above me or below me?
-                switch (set)
+                switch (currentLookDirection)
                 {
                     case KingDirection.Up:
-                        a = 1;
-                        b = false;
-                        Points s = new Points(currentX + a, currentY);
-
-                        if (CastlingCheck(s))
+                        specialPiece = SpecialChesspiece(3, false, rook, 1);
+                        if (!specialPiece)
                             break;
-
-                        // Make sure there's nothing in between us
-                        for (int i = currentY + 1; i < rook.currentY; i++)
-                        {
-                            Points p = new Points(currentX, i);
-                            if (chessManager.IsOccupied(p))
-                            {
-                                b = true;
-                                break;
-                            }
-                        }
-                        if (b) break;
-
-                        Points c = new Points(currentX + specialPoints[3].X, currentY + specialPoints[3].Y);
-                        if (CastlingCheck(c))
-                            break;
-                        result.Add(c);
+                        result.Add(specialPiece.CurrentTilePoint());
                         specialMove = SpecialMove.Castling;
 
 
                         break;
 
                     case KingDirection.Down:
-                        a = -1;
-                        b = false;
-                        s = new Points(currentX + a, currentY);
-
-                        if (CastlingCheck(s))
+                        specialPiece = SpecialChesspiece(2, false, rook, -1);
+                        if (!specialPiece)
                             break;
-
-                        // Make sure there's nothing in between us
-                        for (int i = currentY - 1; i > rook.currentY; i--)
-                        {
-                            Points p = new Points(currentX, i);
-                            if (chessManager.IsOccupied(p))
-                            {
-                                b = true;
-                                break;
-                            }
-                        }
-                        if (b) break;
-
-                        c = new Points(currentX + specialPoints[2].X, currentY + specialPoints[2].Y);
-                        if (CastlingCheck(c))
-                            break;
-                        result.Add(c);
-
+                        result.Add(specialPiece.CurrentTilePoint());
                         specialMove = SpecialMove.Castling;
                         break;
                 }
@@ -521,5 +318,35 @@ public class King : Chesspiece
         }
 
         return result;
+    }
+
+    private ChessPieceConnection SpecialChesspiece(int specialPointIndex, bool XIsTrueYIsFalse, Rook currentRook, int kingOffset)
+    {
+        bool isRouteCovered = false;
+        bool isPositiveOrNegative = kingOffset > 0 ? true : false;
+        int combinedOffset = XIsTrueYIsFalse ? currentX + kingOffset : currentY + kingOffset;
+        Points moveablePosition = XIsTrueYIsFalse ? new Points(combinedOffset, currentY) : new Points(currentX, combinedOffset);
+        int rookCurrentIntXY = XIsTrueYIsFalse ? currentRook.currentX : currentRook.currentY;
+
+        if (CastlingCheck(moveablePosition))
+            return null;
+
+        // Make sure there's nothing in between us
+        for (int i = combinedOffset; isPositiveOrNegative ? i < rookCurrentIntXY : i > rookCurrentIntXY; i += kingOffset)
+        {
+            Points newPoint = XIsTrueYIsFalse ? new Points(i, currentY) : new Points(currentX, i);
+            if (chessManager.IsOccupied(newPoint))
+            {
+                isRouteCovered = true;
+                break;
+            }
+        }
+
+        if (isRouteCovered) return null;
+
+        Points specialNewMove = new Points(currentX + specialPoints[specialPointIndex].X, currentY + specialPoints[specialPointIndex].Y);
+        if (CastlingCheck(specialNewMove))
+            return null;
+        return chessManager.GetChesspieceConnection(specialNewMove);
     }
 }

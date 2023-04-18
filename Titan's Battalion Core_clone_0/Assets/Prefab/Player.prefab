@@ -14,6 +14,7 @@ GameObject:
   - component: {fileID: 6443070331896006688}
   - component: {fileID: 7159557365058150070}
   - component: {fileID: 8137012238859020079}
+  - component: {fileID: -1371665176457619308}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -66,7 +67,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   chessboard: {fileID: 0}
   piece: {fileID: 3471896705929466035, guid: 768718f4b168b6a45a1864a998f22655, type: 3}
-  pieceManager: {fileID: 0}
   boardGenerator: {fileID: 0}
   gameManager: {fileID: 0}
   playerUI: {fileID: 5189829321658747103}
@@ -78,29 +78,23 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 5cf782c50353d354d91a89fd3bbd1926, type: 2}
   - {fileID: 11400000, guid: ba51654f4c075064b9aa57165c77a791, type: 2}
   - {fileID: 11400000, guid: 0242fe6501a07dd4ca025b1fbc45281f, type: 2}
-  yoffset: 0.2
-  dragOffset: 1.5
   gameModeTerritory: {fileID: 4757412598191659301}
   armyEdgedPoints: []
   armyEdgedobjects: []
   currentCamera: {fileID: 0}
-  currentlyDragging: {fileID: 0}
-  currentHover:
-    X: 1984987
-    Y: 51684
-  availableMoves: []
-  availableSpecialMoves: []
-  spawnedObject: []
+  spawnedObjects: []
   connections: []
   teamNumber:
     m_InternalValue: 0
   mainBoardOffsetX: 0
   mainBoardOffsetY: 0
-  retryBool:
+  NetworkRetryBool:
     m_InternalValue: 0
-  endBool:
+  NetworkEndBool:
     m_InternalValue: 0
-  setCurrentDrag: 0
+  NetworkIsKingInCheck:
+    m_InternalValue: 0
+  currentKing: {fileID: 0}
   setCameraTransform:
   - {x: 4.5, y: 20, z: 1}
   - {x: 3, y: 20, z: 1}
@@ -113,8 +107,13 @@ MonoBehaviour:
   - {x: 0, y: 0, z: 0}
   currentSetModeNet:
     m_InternalValue: 0
-  isMyTurnNet:
+  currentGameMode:
     m_InternalValue: 0
+  NetworkIsMyTurn:
+    m_InternalValue: 0
+  interaction: {fileID: -1371665176457619308}
+  _playerUI: {fileID: 0}
+  playerTerritorySpawn: {fileID: 0}
 --- !u!114 &6443070331896006688
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -169,6 +168,31 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 26da67cfc8b3a0241bb313434957a423, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &-1371665176457619308
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9013614472923032471}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 940ed70e93debb946a720a132a5cfb93, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  currentCamera: {fileID: 0}
+  controllingPlayer: {fileID: 5360451695460521378}
+  pieceManager: {fileID: 0}
+  gameManager: {fileID: 0}
+  currentlyDragging: {fileID: 0}
+  currentHover:
+    X: 1984987
+    Y: 51684
+  yoffset: 0.2
+  dragOffset: 1.5
+  availableMoves: []
+  availableSpecialMoves: []
+  unavailableMoves: []
 --- !u!1001 &2754877094326814587
 PrefabInstance:
   m_ObjectHideFlags: 0

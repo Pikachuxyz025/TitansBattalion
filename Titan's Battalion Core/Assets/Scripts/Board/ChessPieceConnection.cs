@@ -8,19 +8,13 @@ public class ChessPieceConnection : NetworkBehaviour
 {
 
     public NetworkVariable<int> GridX = new NetworkVariable<int>(-1), GridY = new NetworkVariable<int>(-1);
-    public List<Chesspiece> inCheck = new List<Chesspiece>();
+    public List<Chesspiece> piecesThatHaveUsInCheck = new List<Chesspiece>();
     public bool isConnected = false;
     public Pawn SkippedPawnd = null;
     public GameObject pieceSetPoint;
     public Chesspiece occupiedChesspiece;
     [SerializeField] private MeshFilter setupMesh;
-    public NetworkVariable<bool> n_isConnected = new NetworkVariable<bool>(false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
     public NetworkVariable<int> spawnTerritoryId = new NetworkVariable<int>(0);
-
-    private void Awake()
-    {
-        n_isConnected.OnValueChanged += ChangeIsConnected;
-    }
 
     private void ChangeIsConnected(bool previousValue, bool newValue)
     {
@@ -29,11 +23,11 @@ public class ChessPieceConnection : NetworkBehaviour
     public bool IsInCheck(int team)
     {
         bool b = false;
-        if (inCheck.Count > 0)
+        if (piecesThatHaveUsInCheck.Count > 0)
         {
-            for (int i = 0; i < inCheck.Count; i++)
+            for (int i = 0; i < piecesThatHaveUsInCheck.Count; i++)
             {
-                if (inCheck[i].team == team)
+                if (piecesThatHaveUsInCheck[i].team == team)
                     continue;
                 else
                     b = true;
@@ -46,14 +40,16 @@ public class ChessPieceConnection : NetworkBehaviour
         isConnected = true;
     }
 
-
     [ClientRpc]
-    public void SwapLayersClientRpc(string c, ClientRpcParams rpc = default)
+    public void SwapLayersClientRpc(string layerName, ClientRpcParams rpc = default)
     {
-        gameObject.layer = LayerMask.NameToLayer(c);
+        gameObject.layer = LayerMask.NameToLayer(layerName);
     }
 
-    public void SwapLayers(string c) => gameObject.layer = LayerMask.NameToLayer(c);
+    public Points GetChessboardPosition()
+    {
+        return new Points(GridX.Value, GridY.Value);
+    }
 
 
     [ClientRpc]
@@ -112,7 +108,6 @@ public class ChessPieceConnection : NetworkBehaviour
         mesh.triangles = tris;
 
         mesh.RecalculateNormals();
-        //ChessPieceManager.instance.AddPoints(x, y, gameObject);
     }
 
     public Points CurrentTilePoint()

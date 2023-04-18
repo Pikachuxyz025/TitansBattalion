@@ -29,7 +29,7 @@ public class Points: IEquatable<Points>
 
     public bool ComparePoints(Points x)
     {
-        return X==x.X && Y==x.Y;
+        return X == x.X && Y == x.Y;
     }
 
     public static bool DualEquals(Points x,Points y)

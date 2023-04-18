@@ -24,12 +24,12 @@ public enum SpecialMove
 
 public class Chesspiece : NetworkBehaviour
 {
+    protected Player controllingPlayer;
+    protected CheckableList playersCheckableList;
     public int team;
-    public bool isKing, hasMoved,isPawn;
-
-    [Header("Location")]
-    public int currentX = 0;
-    public int currentY = 0;
+    public bool isKing, hasMoved, isPawn;
+    public int currentX { get; private set; } = 0;
+    public int currentY { get; private set; } = 0;
 
     NetworkVariable<int> netCurrentX = new NetworkVariable<int>(0);
     NetworkVariable<int> netCurrentY = new NetworkVariable<int>(0);
@@ -60,6 +60,16 @@ public class Chesspiece : NetworkBehaviour
         chessManager = ChessPieceManager.instance;
     }
 
+    public Points GetCurrentPosition()
+    {
+        return new Points(currentX, currentY);
+    }
+
+    public void SetNewCurrentPoints(int x, int y)
+    {
+        currentX = x;
+        currentY = y;
+    }
     public void SetGameMode(GameMode newMode) => currentGameMode.Value = newMode;
 
    protected bool CurrentPieceCheck(Points p)
@@ -77,42 +87,42 @@ public class Chesspiece : NetworkBehaviour
         currentX = newValue;
     }
 
-    [ClientRpc]
-    public void SetupPieceClientRpc(int teamNum)
+    public void SetupPiece(int teamNum, Player player)
     {
         team = teamNum;
+        controllingPlayer = player;
+        playersCheckableList = player.playerCheckableList;
+        ChessPieceManager.instance.activeChesspieces.Add(this);
     }
 
     public bool IsInCheck()
     {
         bool b = false;
         if (chessManager == null)
-        {
-            Debug.Log("faulty");
             return b;
-        }
+        
         ChessPieceConnection conn = chessManager.GetChesspieceConnection(new Points(currentX, currentY));
         if (conn == null)
             return b;
-        /*if (conn.inCheck.Count > 0)
-        {
-            for (int i = 0; i < conn.inCheck.Count; i++)
-            {
-                if (conn.inCheck[i].team == team)
-                    continue;
-                else
-                    b = true;
-            }
-        }*/
+
         b = conn.IsInCheck(team);
         return b;
     }
-
-    public void AddActivePiece()
+    public bool IsInCheck(out List<Chesspiece> dangerousChesspieces)
     {
-        ChessPieceManager.instance.activeChesspieces.Add(this);
-    }
+        dangerousChesspieces = new List<Chesspiece>();
+        bool b = false;
+        if (chessManager == null)
+            return b;
 
+        ChessPieceConnection conn = chessManager.GetChesspieceConnection(new Points(currentX, currentY));
+        if (conn == null)
+            return b;
+
+        b = conn.IsInCheck(team);
+        dangerousChesspieces.AddRange(conn.piecesThatHaveUsInCheck);
+        return b;
+    }
     private void Update()
     {
         transform.position = Vector3.Lerp(transform.position, desiredPosition, Time.deltaTime * 10);
@@ -125,10 +135,10 @@ public class Chesspiece : NetworkBehaviour
         return result;
     }
     [ServerRpc]
-    public void SetPositionServerRpc(int x,int y ,Vector3 position, bool force = false)
+    public void SetPositionServerRpc(int x, int y, Vector3 position, bool force = false)
     {
-        netCurrentX.Value= x;
-        netCurrentY.Value= y;
+        netCurrentX.Value = x;
+        netCurrentY.Value = y;
         desiredPosition = position;
         if (force)
             transform.position = desiredPosition;
@@ -152,159 +162,72 @@ public class Chesspiece : NetworkBehaviour
 
     protected void AddInCheck(Points p)
     {
-        if (!chessManager.GetChesspieceConnection(p).inCheck.Contains(this))
-            chessManager.GetChesspieceConnection(p).inCheck.Add(this);
+        if (!chessManager.GetChesspieceConnection(p).piecesThatHaveUsInCheck.Contains(this))
+            chessManager.GetChesspieceConnection(p).piecesThatHaveUsInCheck.Add(this);
     }
 
+    protected void AddInCheck(List<Points> newPoints)
+    {
+        foreach (Points newPoint in newPoints)
+        {
+            if (!chessManager.GetChesspieceConnection(newPoint).piecesThatHaveUsInCheck.Contains(this))
+                chessManager.GetChesspieceConnection(newPoint).piecesThatHaveUsInCheck.Add(this);
+        }
+    }
+
+    public bool IsThisTheControllingPlayer(Player player)
+    {
+        return controllingPlayer == player;
+    }
 
     public virtual List<Points> GetAvailableMoves()
     {
         List<Points> newMoves = new List<Points>();
 
         switch (type)
-        { 
+        {
             case SetType.Manual:
 
                 for (int i = 0; i < addedPoints.Count; i++)
                 {
-                    Points c = new Points(currentX + addedPoints[i].X, currentY + addedPoints[i].Y);
+                    Points addedPoint = new Points(currentX + addedPoints[i].X, currentY + addedPoints[i].Y);
 
-                    if (!ChessPieceManager.instance.IsCoordinateInList(c))
+                    if (!ChessPieceManager.instance.IsCoordinateInList(addedPoint))
                         continue;
-                    if (chessManager.IsOccupied(c))
-                        if (chessManager.GetOccupiedPiece(c).team == team)
+                    if (chessManager.IsOccupied(addedPoint))
+                        if (chessManager.GetOccupiedPiece(addedPoint).team == team)
                             continue;
 
-                    AddInCheck(c);
-                    newMoves.Add(c);
+                    AddInCheck(addedPoint);
+                    newMoves.Add(addedPoint);
                 }
                 break;
             case SetType.Open:
                 if (allStraight)
                 {
                     // UP
-                    for (int i = currentY + 1; i > currentY; i++)
-                    {
-                        Points p = new Points(currentX, i);
-                        if (!chessManager.IsCoordinateInList(p))
-                            break;
-                        if (chessManager.IsOccupied(p))
-                        {
-                            if (chessManager.GetOccupiedPiece(p).team != team)
-                            {
-                                AddInCheck(p);
-                                newMoves.Add(p);
-                            }
-                            break;
-                        }
-                        AddInCheck(p);
-                        newMoves.Add(p);
-                    }
+                    AddInCheck(NextPoint(false, 1));
+                    newMoves.AddRange(NextPoint(false, 1));
 
                     //Down
-                    for (int i = currentY - 1; i < currentY; i--)
-                    {
-                        Points p = new Points(currentX, i);
-                        if (!chessManager.IsCoordinateInList(p))
-                            break;
-                        if (chessManager.IsOccupied(p))
-                        {
-                            if (chessManager.GetOccupiedPiece(p).team != team)
-                            {
-                                AddInCheck(p);
-                                newMoves.Add(p);
-                            }
-                            break;
-                        }
-                        AddInCheck(p);
-                        newMoves.Add(p);
-                    }
+                    AddInCheck(NextPoint(false, -1));
+                    newMoves.AddRange(NextPoint(false, -1));
 
                     //Left
-                    for (int i = currentX - 1; i < currentX; i--)
-                    {
-                        Points p = new Points(i, currentY);
-                        if (!chessManager.IsCoordinateInList(p))
-                            break;
-                        if (chessManager.IsOccupied(p))
-                        {
-                            if (chessManager.GetOccupiedPiece(p).team != team)
-                            {
-                                AddInCheck(p);
-                                newMoves.Add(p);
-                            }
-                            break;
-                        }
-                        AddInCheck(p);
-                        newMoves.Add(p);
-                    }
+                    AddInCheck(NextPoint(true, -1));
+                    newMoves.AddRange(NextPoint(true, -1));
 
-                    //Right
-                    for (int i = currentX + 1; i > currentX; i++)
-                    {
-                        Points p = new Points(i, currentY);
-                        if (!chessManager.IsCoordinateInList(p))
-                            break;
-                        if (chessManager.IsOccupied(p))
-                        {
-                            if (chessManager.GetOccupiedPiece(p).team != team)
-                            {
-                                AddInCheck(p);
-                                newMoves.Add(p);
-                            }
-                            break;
-                        }
-                        AddInCheck(p);
-                        newMoves.Add(p);
-                    }
+                    //Right                  
+                    AddInCheck(NextPoint(true, 1));
+                    newMoves.AddRange(NextPoint(true, 1));
                 }
                 if (allDiagonal)
                 {
-
-                    for (int x = currentX + 1, y = currentY + 1; x > currentX && y > currentY; x++, y++)
+                    AddInCheck(NextPoint(1, 1));
+                    newMoves.AddRange(NextPoint(1, 1));
+                    /*for (int x = currentX + 1, y = currentY + 1; x > currentX && y > currentY; x++, y++)
                     {
                         Points p = new Points(x, y);
-                        if (!chessManager.IsCoordinateInList(p))
-                            break;
-                        if (chessManager.IsOccupied(p))
-                        {
-                            if (chessManager.GetOccupiedPiece(p).team != team)
-                                                            {
-                                AddInCheck(p);
-                                newMoves.Add(p);
-                            }
-                            break;
-                        }
-                        AddInCheck(p);
-                        newMoves.Add(p);
-                    }
-
-                    for (int x = currentX - 1, y = currentY + 1; x < currentX && y > currentY; x--, y++)
-                    {
-                        Points p = new Points(x, y);
-                        if (!chessManager.IsCoordinateInList(p))
-                            break;
-                        if (chessManager.IsOccupied(p))
-                        {
-                            if (chessManager.GetOccupiedPiece(p).team != team)
-                                                            {
-                                AddInCheck(p);
-                                newMoves.Add(p);
-                            }
-                            break;
-                        }
-                        AddInCheck(p);
-                        newMoves.Add(p);
-                    }
-
-                    for (int x = currentX - 1, y = currentY - 1; x < currentX && y < currentY; x--, y--)
-                    {
-                        Points p = new Points(x, y);
-                        //Set(ref newMoves, p);
-                        //LocationStatus pieceStatus;
-                        //CheckLocationStatus(p, out pieceStatus);
-
-                        //AddPoint(ref newMoves, pieceStatus, p);
                         if (!chessManager.IsCoordinateInList(p))
                             break;
                         if (chessManager.IsOccupied(p))
@@ -318,16 +241,50 @@ public class Chesspiece : NetworkBehaviour
                         }
                         AddInCheck(p);
                         newMoves.Add(p);
-                    }
-
-                    for (int x = currentX + 1, y = currentY - 1; x > currentX && y < currentY; x++, y--)
+                    }*/
+                    AddInCheck(NextPoint(-1, 1));
+                    newMoves.AddRange(NextPoint(-1, 1));
+                    /*for (int x = currentX - 1, y = currentY + 1; x < currentX && y > currentY; x--, y++)
                     {
                         Points p = new Points(x, y);
-                        //Set(ref newMoves, p);
-                        //LocationStatus pieceStatus;
-                        //CheckLocationStatus(p, out pieceStatus);
-
-                        //AddPoint(ref newMoves, pieceStatus, p);
+                        if (!chessManager.IsCoordinateInList(p))
+                            break;
+                        if (chessManager.IsOccupied(p))
+                        {
+                            if (chessManager.GetOccupiedPiece(p).team != team)
+                            {
+                                AddInCheck(p);
+                                newMoves.Add(p);
+                            }
+                            break;
+                        }
+                        AddInCheck(p);
+                        newMoves.Add(p);
+                    }*/
+                    AddInCheck(NextPoint(-1, -1));
+                    newMoves.AddRange(NextPoint(-1, -1));
+                    /*for (int x = currentX - 1, y = currentY - 1; x < currentX && y < currentY; x--, y--)
+                    {
+                        Points p = new Points(x, y);
+                        if (!chessManager.IsCoordinateInList(p))
+                            break;
+                        if (chessManager.IsOccupied(p))
+                        {
+                            if (chessManager.GetOccupiedPiece(p).team != team)
+                            {
+                                AddInCheck(p);
+                                newMoves.Add(p);
+                            }
+                            break;
+                        }
+                        AddInCheck(p);
+                        newMoves.Add(p);
+                    }*/
+                    AddInCheck(NextPoint(1, -1));
+                    newMoves.AddRange(NextPoint(1, -1));
+                    /*for (int x = currentX + 1, y = currentY - 1; x > currentX && y < currentY; x++, y--)
+                    {
+                        Points p = new Points(x, y);
                         if (!chessManager.IsCoordinateInList(p))
                             break;
                         if (chessManager.IsOccupied(p))
@@ -342,160 +299,59 @@ public class Chesspiece : NetworkBehaviour
                         AddInCheck(p);
                         newMoves.Add(p);
 
-                    }
-                }        
-        break;
+                    }*/
+                }
+                break;
         }
-
-        #region If Statement SetType
-        /*if (type == SetType.Manual)
-        {
-            for (int i = 0; i < addedPoints.Count; i++)
-            {
-                Points c = new Points(currentX + addedPoints[i].X, currentY + addedPoints[i].Y);
-                if (ChessPieceManager.instance.IsCoordinateInList(c))
-                    newMoves.Add(c);
-            }
-        }
-        else {
-            if (allStraight)
-            {
-                // UP
-                for (int i = currentY + 1; i > currentY; i++)
-                {
-                    Points p = new Points(currentX, i);
-                    if (!chessManager.IsCoordinateInList(p))
-                        break;
-                    if (chessManager.IsOccupied(p))
-                    {
-                        if (chessManager.GetOccupiedPiece(p).team != team)
-                            newMoves.Add(new Points(currentX, i));
-                        break;
-                    }
-                    newMoves.Add(p);
-                }
-
-                //Down
-                for (int i = currentY - 1; i < currentY; i--)
-                {
-                    Points p = new Points(currentX, i);
-                    if (!chessManager.IsCoordinateInList(p))
-                        break;
-                    if (chessManager.IsOccupied(p))
-                    {
-                        if (chessManager.GetOccupiedPiece(p).team != team)
-                            newMoves.Add(new Points(currentX, i));
-                        break;
-                    }
-                    newMoves.Add(p);
-                }
-
-                //Left
-                for (int i = currentX - 1; i < currentX; i--)
-                {
-                    Points p = new Points(i,currentY);
-                    if (!chessManager.IsCoordinateInList(p))
-                        break;
-                    if (chessManager.IsOccupied(p))
-                    {
-                        if (chessManager.GetOccupiedPiece(p).team != team)
-                            newMoves.Add(new Points(currentX, i));
-                        break;
-                    }
-                    newMoves.Add(p);
-                }
-
-                //Right
-                for (int i = currentX + 1; i > currentX; i++)
-                {
-                    Points p = new Points(i, currentY);
-                    if (!chessManager.IsCoordinateInList(p))
-                        break;
-                    if (chessManager.IsOccupied(p))
-                    {
-                        if (chessManager.GetOccupiedPiece(p).team != team)
-                            newMoves.Add(new Points(i, currentY));
-                        break;
-                    }
-                    newMoves.Add(p);
-                }
-            }
-            if (allDiagonal)
-            {
-
-                for (int x = currentX + 1, y = currentY + 1; x > currentX && y > currentY; x++, y++)
-                {
-                    Points p = new Points(x,y);
-                    if (!chessManager.IsCoordinateInList(p))
-                        break;
-                    if (chessManager.IsOccupied(p))
-                    {
-                        if (chessManager.GetOccupiedPiece(p).team != team)
-                            newMoves.Add(p);
-                        break;
-                    }
-                    newMoves.Add(p);
-                }
-
-                for (int x = currentX - 1, y = currentY + 1; x < currentX && y > currentY; x--, y++)
-                {
-                    Points p = new Points(x, y);
-                    if (!chessManager.IsCoordinateInList(p))
-                        break;
-                    if (chessManager.IsOccupied(p))
-                    {
-                        if (chessManager.GetOccupiedPiece(p).team != team)
-                            newMoves.Add(p);
-                        break;
-                    }
-                    newMoves.Add(p);
-                }
-
-                for (int x = currentX - 1, y = currentY - 1; x < currentX && y < currentY; x--, y--)
-                {
-                    Points p = new Points(x, y);
-                    //Set(ref newMoves, p);
-                    //LocationStatus pieceStatus;
-                    //CheckLocationStatus(p, out pieceStatus);
-
-                    //AddPoint(ref newMoves, pieceStatus, p);
-                    if (!chessManager.IsCoordinateInList(p))
-                        break;
-                    if (chessManager.IsOccupied(p))
-                    {
-                        if (chessManager.GetOccupiedPiece(p).team != team)
-                            newMoves.Add(p);
-                        break;
-                    }
-                    newMoves.Add(p);
-                }
-
-                for (int x = currentX + 1, y = currentY - 1; x > currentX && y < currentY; x++, y--)
-                {
-                    Points p = new Points(x, y);
-                    //Set(ref newMoves, p);
-                    //LocationStatus pieceStatus;
-                    //CheckLocationStatus(p, out pieceStatus);
-
-                    //AddPoint(ref newMoves, pieceStatus, p);
-                    if (!chessManager.IsCoordinateInList(p))
-                        break;
-                    if (chessManager.IsOccupied(p))
-                    {
-                        if (chessManager.GetOccupiedPiece(p).team != team)
-                            newMoves.Add(p);
-                        break;
-                    }
-                    newMoves.Add(p);
-
-                }
-            }
-        }*/
-        #endregion
         return newMoves;
     }
 
+    protected List<Points> NextPoint(bool XIsTrueYIsFalse, int pointOffset)
+    {
+        List<Points> resultingPoints = new List<Points>();
+        int combinedOffset = XIsTrueYIsFalse ? currentX + pointOffset : currentY + pointOffset;
+        int currentlyXorY = XIsTrueYIsFalse ? currentX : currentY;
+        bool isPositiveOrNegative = pointOffset > 0 ? true : false;
+        for (int i = combinedOffset; isPositiveOrNegative ? i > currentlyXorY : i < currentlyXorY; i += pointOffset)
+        {
+            Points nextPoint = XIsTrueYIsFalse ? new Points(i, currentY) : new Points(currentX, i);
+            if (!chessManager.IsCoordinateInList(nextPoint))
+                break;
 
+            if (chessManager.IsOccupied(nextPoint))
+            {
+                if (chessManager.GetOccupiedPiece(nextPoint).team != team)
+                    resultingPoints.Add(nextPoint);
+                break;
+            }
+            resultingPoints.Add(nextPoint);
+        }
+        return resultingPoints;
+    }
+
+    protected List<Points> NextPoint(int pointOffsetX, int pointOffsetY)
+    {
+        List<Points> resultingPoints = new List<Points>();
+        int combinedOffsetX = currentX + pointOffsetX;
+        int combinedOffsetY = currentY + pointOffsetX;
+        bool isXPositiveOrNegative = pointOffsetX > 0 ? true : false;
+        bool isYPositiveOrNegative = pointOffsetY > 0 ? true : false;
+        for (int x = combinedOffsetX, y = combinedOffsetY; isXPositiveOrNegative ? x > currentX : x < currentX && isYPositiveOrNegative ? y > currentY : y < currentY; x += pointOffsetX, y += pointOffsetY)
+        {
+            Points nextPoint = new Points(x, y);
+            if (!chessManager.IsCoordinateInList(nextPoint))
+                break;
+
+            if (chessManager.IsOccupied(nextPoint))
+            {
+                if (chessManager.GetOccupiedPiece(nextPoint).team != team)
+                    resultingPoints.Add(nextPoint);
+                break;
+            }
+            resultingPoints.Add(nextPoint);
+        }
+        return resultingPoints;
+    }
     public virtual void SetScale(Vector3 scale, bool force = false)
     {
         desiredScale = scale;

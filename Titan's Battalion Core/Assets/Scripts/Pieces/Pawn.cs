@@ -2,23 +2,25 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Unity.Netcode;
-
-
+using System.Linq;
 
 public class Pawn : Chesspiece
 {
-    public List<Points> moveList = new List<Points>();
-    public Dictionary<Points, Pawn> pawns = new Dictionary<Points, Pawn>(new Points.EqualityComparer());
+    [SerializeField] private List<Points> moveList = new List<Points>();
+    public readonly Dictionary<Points, Pawn> pawns = new Dictionary<Points, Pawn>(new Points.EqualityComparer());
     [SerializeField] protected GameObject convertableQueen;
 
-    public List<Points> takeoverPoints = new List<Points>();
+    [SerializeField] private List<Points> takeoverPoints = new List<Points>();
+    private ChessPieceConnection enPassantPoint;
+    [SerializeField] private bool isEnPassantActive;
+    private int enPassantTimeOfMoveCount = 1464674684;
+    private Points[] startingMoves = new Points[2];
 
 
-    public Dictionary<Pawn, int> Which()
+    public List<Pawn> PassantPawns()
     {
 
-        Dictionary<Pawn, int> crow = new Dictionary<Pawn, int>();
-        ChessPieceManager chessManager = ChessPieceManager.instance;
+        List<Pawn> possiblePawnTargets = new List<Pawn>();
 
 
         Points[] checkPoints = new Points[4];
@@ -29,131 +31,173 @@ public class Pawn : Chesspiece
 
         for (int i = 0; i < checkPoints.Length; i++)
         {
-            Points point = checkPoints[i];
-            if (!chessManager.IsCoordinateInList(point))
+            Points currentCheckPoint = checkPoints[i];
+            if (!chessManager.IsCoordinateInList(currentCheckPoint))
                 continue;
 
-            if (!chessManager.IsOccupied(point))
+            if (!chessManager.IsOccupied(currentCheckPoint))
                 continue;
 
 
-            Chesspiece piece = chessManager.GetOccupiedPiece(point);
+            Chesspiece foundChesspiece = chessManager.GetOccupiedPiece(currentCheckPoint);
 
-            if (piece is Pawn && piece.team != team)
+            if (foundChesspiece is Pawn && foundChesspiece.team != team)
             {
-                Pawn enemyPawn = piece.gameObject.GetComponent<Pawn>();
-                if (enemyPawn.moveList.Count > 0)
-                {
-                    crow.Add(enemyPawn, i + 1);
-                }
+                Pawn enemyPawn = foundChesspiece.gameObject.GetComponent<Pawn>();
+                possiblePawnTargets.Add(enemyPawn);
             }
         }
-
-        return crow;
-    }
-
-    public void GetPointOutput(out int x, out int y)
-    {
-        x = 0;
-        y = 0;
-        if (moveList.Count > 1)
-        {
-            x = moveList[moveList.Count - 1].X - moveList[moveList.Count - 2].X;
-            y = moveList[moveList.Count - 1].Y - moveList[moveList.Count - 2].Y;
-        }
+        if (possiblePawnTargets.Count == 0)
+            Debug.Log("no pawns were found");
+        return possiblePawnTargets;
     }
 
 
 
     public void AddToMoveList()
     {
-        Points p = new Points(currentX, currentY);
-        moveList.Add(p);
+        Points currentPoint = new Points(currentX, currentY);
+        moveList.Add(currentPoint);
+        if (moveList.Count > enPassantTimeOfMoveCount && isEnPassantActive)
+            isEnPassantActive = false;
     }
 
-    public override List<Points> GetSpecialMoves()
+    private List<Points> PointsToAdd(List<Points> setupPositions)
     {
         List<Points> result = new List<Points>();
-        Dictionary<Pawn, int> crow = Which();
-        ChessPieceManager chessManager = ChessPieceManager.instance;
-        foreach (Pawn item in crow.Keys)
-        {
-            int x = 0;
-            int y = 0;
-            item.GetPointOutput(out x, out y);
-
-            if (Mathf.Abs(x) < 2 && Mathf.Abs(y) < 2)
-                break;
-
-            switch (crow[item])
-            {
-                case 1:
-                    result.Add(PrintOut(x, 0, 1));
-                    if (!pawns.ContainsKey(PrintOut(x, 0, 1)))
-                        pawns.Add(PrintOut(x, 0, 1), item);
-                    break;
-                case 2:
-                    result.Add(PrintOut(x, 2, 3));
-                    if (!pawns.ContainsKey(PrintOut(x, 2, 3)))
-                        pawns.Add(PrintOut(x, 2, 3), item);
-                    break;
-                case 3:
-                    result.Add(PrintOut(y, 2, 0));
-                    if (!pawns.ContainsKey(PrintOut(y, 2, 0)))
-                        pawns.Add(PrintOut(y, 2, 0), item);
-                    break;
-                case 4:
-                    result.Add(PrintOut(y, 3, 1));
-                    if (!pawns.ContainsKey(PrintOut(y, 3, 1)))
-                        pawns.Add(PrintOut(y, 3, 1), item);
-                    break;
-            }
-        }
-        specialMove = SpecialMove.EnPassant;
+        int x = 0;
+        int y = 0;
+        SetupIndexesBasedOnTeam(out x, out y);
+        result.Add(new Points(currentX + setupPositions[x].X, currentY + setupPositions[x].Y));
+        result.Add(new Points(currentX + setupPositions[y].X, currentY + setupPositions[y].Y));
         return result;
     }
+
+    private Points[] StartingPointsToAdd(List<Points> setupPositions)
+    {
+        Points[] result = new Points[2];
+        int x = 0;
+        int y = 0;
+        SetupIndexesBasedOnTeam(out x, out y);
+        result[0] = new Points(currentX + setupPositions[x].X, currentY + setupPositions[x].Y);
+        result[1] = new Points(currentX + setupPositions[y].X, currentY + setupPositions[y].Y);
+        return result;
+    }
+
+    private void SetupIndexesBasedOnTeam(out int x, out int y)
+    {
+        x = 0;
+        y = 0;
+        switch (team)
+        {
+            case 1:
+                x = 0;
+                y = 1;
+                break;
+            case 2:
+                x = 2;
+                y = 3;
+                break;
+            case 3:
+                x = 4;
+                y = 5;
+                break;
+            case 4:
+                x = 6;
+                y = 7;
+                break;
+        }
+    }
+
+    private List<Points> PointsToTakeover(List<Points> setupPositions)
+    {
+        int x = 0;
+        int y = 0;
+        SetupIndexesBasedOnTeam(out x, out y);
+
+        List<Points> result = new List<Points>();
+        List<Points> createdPoints = new List<Points>();
+        createdPoints.Add(new Points(currentX + setupPositions[x].X, currentY + setupPositions[x].Y));
+        createdPoints.Add(new Points(currentX + setupPositions[y].X, currentY + setupPositions[y].Y));
+
+        foreach (Points createdPoint in createdPoints)
+        {
+            if (!chessManager.IsCoordinateInList(createdPoint))
+                break;
+            if (chessManager.IsOccupied(createdPoint))
+            {
+                if (chessManager.GetOccupiedPiece(createdPoint).team != team)
+                {
+                    AddInCheck(createdPoint);
+                    result.Add(createdPoint);
+                }
+            }
+        }
+
+        return result;
+    }
+
+    private List<Points> BasicPointsSeptup(List<Points> setupPositions)
+    {
+        int x = 0;
+        int y = 0;
+        SetupIndexesBasedOnTeam(out x, out y);
+
+        List<Points> result = new List<Points>();
+        List<Points> createdPoints = new List<Points>();
+        createdPoints.Add(new Points(currentX + setupPositions[x].X, currentY + setupPositions[x].Y));
+        createdPoints.Add(new Points(currentX + setupPositions[y].X, currentY + setupPositions[y].Y));
+
+        foreach (Points createdPoint in createdPoints)
+        {
+            if (!chessManager.IsCoordinateInList(createdPoint))
+                continue;
+            if (chessManager.IsOccupied(createdPoint))
+                break;
+
+            result.Add(createdPoint);
+        }
+        return result;
+    }
+
+    public void ActiveEnPassantPosition(Points choosenLocation)
+    {
+
+        Debug.Log("Choosen Move: (" + choosenLocation.X + ", " + choosenLocation.Y + ") | startingMoves: (" + startingMoves[1].X + ", " + startingMoves[1].Y + ")");
+
+        if (choosenLocation.Equals(startingMoves[1]))
+        {
+            isEnPassantActive = true;
+            enPassantPoint = chessManager.GetChesspieceConnection(startingMoves[0]);
+            enPassantTimeOfMoveCount = moveList.Count + 1;
+            Debug.Log("EnPassant should be active");
+        }
+    }
+
+    public Points GetEnPassantPosition()
+    {
+        return enPassantPoint.GetChessboardPosition();
+    }
+
+    public bool IsEnPassantActive()
+    { return isEnPassantActive; }
 
     public bool CanCovertToQueen()
     {
         ChessPieceConnection currentConn = chessManager.GetChesspieceConnection(new Points(currentX, currentY));
         if (currentConn.spawnTerritoryId.Value == team)
             return false;
+
         Points c;
 
-        switch (currentConn.spawnTerritoryId.Value)
+        if (currentConn.spawnTerritoryId.Value > 0)
         {
-            case 1:
-                c = new Points(currentX + addedPoints[0].X, currentY + addedPoints[0].Y);
-                if (!chessManager.IsCoordinateInList(c))
-                {
-                    Debug.Log("1: " + c.X + ", " + c.Y);
-                    return true;
-                }
-                break;
-            case 2:
-                c = new Points(currentX + addedPoints[1].X, currentY + addedPoints[1].Y);
-                if (!chessManager.IsCoordinateInList(c))
-                {
-                    Debug.Log("2: " + c.X + ", " + c.Y);
-                    return true;
-                }
-                break;
-            case 3:
-                c = new Points(currentX + addedPoints[2].X, currentY + addedPoints[2].Y);
-                if (!chessManager.IsCoordinateInList(c))
-                {
-                    Debug.Log("3: " + c.X + ", " + c.Y);
-                    return true;
-                }
-                break;
-            case 4:
-                c = new Points(currentX + addedPoints[3].X, currentY + addedPoints[3].Y);
-                if (!chessManager.IsCoordinateInList(c))
-                {
-                    Debug.Log("4: " + c.X + ", " + c.Y);
-                    return true;
-                }
-                break;
+            c = new Points(currentX + addedPoints[currentConn.spawnTerritoryId.Value - 1].X, currentY + addedPoints[currentConn.spawnTerritoryId.Value - 1].Y);
+            if (!chessManager.IsCoordinateInList(c))
+            {
+                Debug.Log(currentConn.spawnTerritoryId.Value + ": " + c.X + ", " + c.Y);
+                return true;
+            }
         }
         return false;
     }
@@ -163,39 +207,44 @@ public class Pawn : Chesspiece
     {
         if (CanCovertToQueen())
         {
-            GameObject q = Instantiate(convertableQueen);
-            q.GetComponent<NetworkObject>().Spawn();
+            GameObject newQueen = Instantiate(convertableQueen);
+            newQueen.GetComponent<NetworkObject>().Spawn();
 
-            Chesspiece cp = q.GetComponent<Chesspiece>();
-            ChessPieceManager chessManager = ChessPieceManager.instance;
-            ChessPieceConnection cc = chessManager.GetChesspieceConnection(new Points(currentX, currentY));
+            Chesspiece queenPiece = newQueen.GetComponent<Chesspiece>();
+            ChessPieceConnection currentChessboardPiece = chessManager.GetChesspieceConnection(new Points(currentX, currentY));
 
-            q.GetComponent<NetworkObject>().ChangeOwnership(OwnerClientId);
-            cc.SetOccupiedPiece(cp);
-            chessManager.PositionSinglePiece(cp, cc);
+            newQueen.GetComponent<NetworkObject>().ChangeOwnership(OwnerClientId);
+            currentChessboardPiece.SetOccupiedPiece(queenPiece);
+            chessManager.PositionSinglePiece(queenPiece, currentChessboardPiece);
 
             Destroy(this.gameObject);
         }
     }
 
-
-    Points PrintOut(int s, int sp, int ap)
+    public override List<Points> GetSpecialMoves()
     {
-        ChessPieceManager chessManager = ChessPieceManager.instance;
-        Points c = new Points(0, 0);
-        if (s == 2)
+        List<Points> takeoverMoveList = PointsToAdd(takeoverPoints);
+        List<Points> result = new List<Points>();
+        List<Pawn> passantPawns = PassantPawns();
+        foreach (Pawn pawn in passantPawns)
         {
-            c = new Points(currentX + specialPoints[sp].X, currentY + specialPoints[sp].Y);
-            if (chessManager.IsCoordinateInList(c))
-                return c;
+            if (!pawn.IsEnPassantActive())
+                continue;
+            Debug.Log(pawn.gameObject.name + " is is in passant mode");
+            if (enPassantPoint == null)
+                continue;
+            Debug.Log("There is a point to go to");
+            if (!takeoverMoveList.Contains(pawn.GetEnPassantPosition()))
+                continue;
+            Debug.Log("If this is showing, we got through all of them. Here: " + pawn.GetEnPassantPosition().X + ", " + pawn.GetEnPassantPosition().Y);
+
+            if (!result.Contains(pawn.GetEnPassantPosition()))
+                result.Add(pawn.GetEnPassantPosition());
+            if (!pawns.ContainsKey(pawn.GetEnPassantPosition()))
+                pawns.Add(pawn.GetEnPassantPosition(), pawn);
         }
-        else if (s == -2)
-        {
-            c = new Points(currentX + specialPoints[ap].X, currentY + specialPoints[ap].Y);
-            if (chessManager.IsCoordinateInList(c))
-                return c;
-        }
-        return c;
+        specialMove = SpecialMove.EnPassant;
+        return result;
     }
 
     public override List<Points> GetAvailableMoves()
@@ -203,112 +252,10 @@ public class Pawn : Chesspiece
         if (!hasMoved)
         {
             List<Points> newMoves = new List<Points>();
+            startingMoves = StartingPointsToAdd(firstMovePoints);
 
-            Points[] points = new Points[2];
-            points[0] = new Points(0, 0);
-            points[1] = new Points(0, 0);
-
-            switch (team)
-            {
-                case 1:
-                    points[0] = new Points(currentX + firstMovePoints[0].X, currentY + firstMovePoints[0].Y);
-                    points[1] = new Points(currentX + firstMovePoints[1].X, currentY + firstMovePoints[1].Y);
-
-                    foreach (Points p in points)
-                    {
-                        if (!chessManager.IsCoordinateInList(p))
-                            break;
-                        if (chessManager.IsOccupied(p))
-                            break;
-
-                        newMoves.Add(p);
-                    }
-                    break;
-                case 2:
-                    points[0] = new Points(currentX + firstMovePoints[2].X, currentY + firstMovePoints[2].Y);
-                    points[1] = new Points(currentX + firstMovePoints[3].X, currentY + firstMovePoints[3].Y);
-
-                    foreach (Points p in points)
-                    {
-                        if (!chessManager.IsCoordinateInList(p))
-                            break;
-                        if (chessManager.IsOccupied(p))
-                            break;
-
-                        newMoves.Add(p);
-                    }
-                    break;
-                case 3:
-                    points[0] = new Points(currentX + firstMovePoints[4].X, currentY + firstMovePoints[4].Y);
-                    points[1] = new Points(currentX + firstMovePoints[5].X, currentY + firstMovePoints[5].Y);
-
-                    foreach (Points p in points)
-                    {
-                        if (!chessManager.IsCoordinateInList(p))
-                            break;
-                        if (chessManager.IsOccupied(p))
-                            break;
-
-                        newMoves.Add(p);
-                    }
-                    break;
-                case 4:
-                    points[0] = new Points(currentX + firstMovePoints[6].X, currentY + firstMovePoints[6].Y);
-                    points[1] = new Points(currentX + firstMovePoints[7].X, currentY + firstMovePoints[7].Y);
-
-                    foreach (Points p in points)
-                    {
-                        if (!chessManager.IsCoordinateInList(p))
-                            break;
-                        if (chessManager.IsOccupied(p))
-                            break;
-
-                        newMoves.Add(p);
-                    }
-                    break;
-            }
-
-            Points[] pointsR = new Points[2];
-
-            switch (team)
-            {
-                case 1:
-                    pointsR[0] = new Points(currentX + takeoverPoints[0].X, currentY + takeoverPoints[0].Y);
-                    pointsR[1] = new Points(currentX + takeoverPoints[1].X, currentY + takeoverPoints[1].Y);
-                    foreach (Points p in pointsR)
-                    {
-                        if (!chessManager.IsCoordinateInList(p))
-                            break;
-                        if (chessManager.IsOccupied(p))
-                        {
-                            if (chessManager.GetOccupiedPiece(p).team != team)
-                            {
-                                AddInCheck(p);
-                                newMoves.Add(p);
-                            }
-                        }
-                    }
-                    break;
-
-                case 2:
-                    pointsR[0] = new Points(currentX + takeoverPoints[2].X, currentY + takeoverPoints[2].Y);
-                    pointsR[1] = new Points(currentX + takeoverPoints[3].X, currentY + takeoverPoints[3].Y);
-                    foreach (Points p in pointsR)
-                    {
-                        if (!chessManager.IsCoordinateInList(p))
-                            break;
-                        if (chessManager.IsOccupied(p))
-                        {
-                            if (chessManager.GetOccupiedPiece(p).team != team)
-                            {
-                                AddInCheck(p);
-                                newMoves.Add(p);
-                            }
-                        }
-                    }
-                    break;
-            }
-
+            newMoves.AddRange(BasicPointsSeptup(firstMovePoints));
+            newMoves.AddRange(PointsToTakeover(takeoverPoints));
             return newMoves;
         }
         else
@@ -316,139 +263,75 @@ public class Pawn : Chesspiece
             ChessPieceConnection currentConn = chessManager.GetChesspieceConnection(new Points(currentX, currentY));
             List<Points> newMoves = new List<Points>();
 
-            Points c = new Points(0, 0);
-
-            Points[] points = new Points[2];
-
             // places to capture other pieces
-            switch (team) // these are for capturing other pieces
-            {
-                case 1:
-                    points[0] = new Points(currentX + takeoverPoints[0].X, currentY + takeoverPoints[0].Y);
-                    points[1] = new Points(currentX + takeoverPoints[1].X, currentY + takeoverPoints[1].Y);
-                    foreach (Points p in points)
-                    {
-                        if (!chessManager.IsCoordinateInList(p))
-                            break;
-                        if (chessManager.IsOccupied(p))
-                        {
-                            if (chessManager.GetOccupiedPiece(p).team != team)
-                            {
-                                AddInCheck(p);
-                                newMoves.Add(p);
-                            }
-                        }
-                    }
-                    break;
 
-                case 2:
-                    points[0] = new Points(currentX + takeoverPoints[2].X, currentY + takeoverPoints[2].Y);
-                    points[1] = new Points(currentX + takeoverPoints[3].X, currentY + takeoverPoints[3].Y);
-                    foreach (Points p in points)
-                    {
-                        if (!chessManager.IsCoordinateInList(p))
-                            break;
-                        if (chessManager.IsOccupied(p))
-                        {
-                            if (chessManager.GetOccupiedPiece(p).team != team)
-                            {
-                                AddInCheck(p);
-                                newMoves.Add(p);
-                            }
-                        }
-                    }
-                    break;
-            }
-
-            switch(currentGameMode.Value)
+            newMoves.AddRange(PointsToTakeover(takeoverPoints));
+            switch (currentGameMode.Value)
             {
                 case GameMode.Chess:
                     // basic chess rules
+                    int x = 0;
                     switch (team)
                     {
                         case 1:
-                            c = new Points(currentX + addedPoints[1].X, currentY + addedPoints[1].Y);
-                            if (!chessManager.IsCoordinateInList(c))
-                                break;
-                            if (chessManager.IsOccupied(c))
-                                break;
-
-                            newMoves.Add(c);
+                            x = 1;
                             break;
                         case 2:
-                            c = new Points(currentX + addedPoints[0].X, currentY + addedPoints[0].Y);
-                            if (!chessManager.IsCoordinateInList(c))
-                                break;
-                            if (chessManager.IsOccupied(c))
-                                break;
-
-                            newMoves.Add(c);
+                            x = 0;
                             break;
                     }
+
+                    Points nextAvailablePosition = new Points(currentX + addedPoints[x].X, currentY + addedPoints[x].Y);
+                    if (!chessManager.IsCoordinateInList(nextAvailablePosition))
+                        break;
+                    if (chessManager.IsOccupied(nextAvailablePosition))
+                        break;
+
+                    newMoves.Add(nextAvailablePosition);
+
                     break;
                 case GameMode.T2:
                     // places to go depending on what territory you're on
-                    switch (currentConn.spawnTerritoryId.Value)
+                    if (currentConn.spawnTerritoryId.Value == 0)
                     {
-                        case 0: // Battlefield Movement
-                            for (int i = 0; i < addedPoints.Count; i++)
+                        for (int i = 0; i < addedPoints.Count; i++)
+                        {
+                            if (i != team - 1)
                             {
-                                if (i != team - 1)
-                                {
-                                    c = new Points(currentX + addedPoints[i].X, currentY + addedPoints[i].Y);
-                                    if (!chessManager.IsCoordinateInList(c))
-                                        continue;
-                                    if (chessManager.IsOccupied(c))
-                                        continue;
+                                nextAvailablePosition = new Points(currentX + addedPoints[i].X, currentY + addedPoints[i].Y);
+                                if (!chessManager.IsCoordinateInList(nextAvailablePosition))
+                                    continue;
+                                if (chessManager.IsOccupied(nextAvailablePosition))
+                                    continue;
 
-                                    newMoves.Add(c);
-                                }
+                                newMoves.Add(nextAvailablePosition);
                             }
+                        }
+                    }
+                    else
+                    {
+                        x = 0;
+                        int y = 0;
+                        switch (currentConn.spawnTerritoryId.Value)
+                        {
+                            case 1:
+                                x = 1;
+                                y = 0;
+                                break;
+                            case 2:
+                                x = 0;
+                                y = 1;
+                                break;
+                        }
+                        nextAvailablePosition = currentConn.spawnTerritoryId.Value == team ?
+                        new Points(currentX + addedPoints[x].X, currentY + addedPoints[x].Y)
+                        : new Points(currentX + addedPoints[y].X, currentY + addedPoints[y].Y);
+                        if (!chessManager.IsCoordinateInList(nextAvailablePosition))
                             break;
-                        case 1:
-                            c = currentConn.spawnTerritoryId.Value == team ?
-                                new Points(currentX + addedPoints[1].X, currentY + addedPoints[1].Y)
-                                : new Points(currentX + addedPoints[0].X, currentY + addedPoints[0].Y);
-                            if (!chessManager.IsCoordinateInList(c))
-                                break;
-                            if (chessManager.IsOccupied(c))
-                                break;
+                        if (chessManager.IsOccupied(nextAvailablePosition))
+                            break;
 
-                            newMoves.Add(c);
-                            break;
-                        case 2:
-                            c = currentConn.spawnTerritoryId.Value == team ?
-                                                    new Points(currentX + addedPoints[0].X, currentY + addedPoints[0].Y)
-                                                    : new Points(currentX + addedPoints[1].X, currentY + addedPoints[1].Y);
-                            if (!chessManager.IsCoordinateInList(c))
-                                break;
-                            if (chessManager.IsOccupied(c))
-                                break;
-
-                            newMoves.Add(c);
-                            break;
-                        case 3:
-                            c = currentConn.spawnTerritoryId.Value == team ?
-                                new Points(currentX + addedPoints[2].X, currentY + addedPoints[2].Y)
-                                : new Points(currentX + addedPoints[2].X, currentY + addedPoints[2].Y);
-                            if (!chessManager.IsCoordinateInList(c))
-                                break;
-                            if (chessManager.IsOccupied(c))
-                                break;
-
-                            newMoves.Add(c);
-                            break;
-                        case 4:
-                            c = currentConn.spawnTerritoryId.Value == team ?
-                                                    new Points(currentX + addedPoints[3].X, currentY + addedPoints[3].Y)
-                                                    : new Points(currentX + addedPoints[3].X, currentY + addedPoints[3].Y);
-                            if (!chessManager.IsCoordinateInList(c))
-                                break;
-                            if (chessManager.IsOccupied(c))
-                                break;
-
-                            newMoves.Add(c);
-                            break;
+                        newMoves.Add(nextAvailablePosition);
                     }
                     break;
             }

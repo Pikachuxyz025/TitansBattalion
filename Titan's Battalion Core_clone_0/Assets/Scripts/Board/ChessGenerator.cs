@@ -61,17 +61,9 @@ public class ChessGenerator : NetworkBehaviour
         ChessPieceManager.instance.AddPoints(xz, yz, show);
         if (transform.GetComponent<IMainBoardInfo>() != null)
             transform.GetComponent<IMainBoardInfo>().CreatePieceList(connection);
-        else
-            connection.n_isConnected.Value = true;
     }
 
     
-    private void Set(int x, int y)
-    {
-
-    }
-
-
 
     public void SetChessboard(ChessboardTemplate newChess) => chessboard = newChess;
 
