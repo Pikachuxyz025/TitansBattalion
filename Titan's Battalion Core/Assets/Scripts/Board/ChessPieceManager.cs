@@ -113,7 +113,7 @@ public class ChessPieceManager : NetworkBehaviour
     {
         if (!Tiles.ContainsKey(currentPoint))
             return Vector3.zero;
-        Vector3 newPosition = Tiles[currentPoint].GetComponent<ChessPieceConnection>().pieceSetPoint.transform.position;
+        Vector3 newPosition = Tiles[currentPoint].GetComponent<ChessPieceConnection>().pieceSpawnPoint.transform.position;
         return newPosition;
     }
 
@@ -147,6 +147,16 @@ public class ChessPieceManager : NetworkBehaviour
         }
     }
 
+    public List<Chesspiece> CurrentPlayerPieces(Player currentPlayer)
+    {
+        List<Chesspiece> playerChesspieces = new List<Chesspiece>();
+        foreach (Chesspiece chesspiece in activeChesspieces)
+        {
+            if(chesspiece.IsThisTheControllingPlayer(currentPlayer))
+                playerChesspieces.Add(chesspiece);
+        }
+        return playerChesspieces;
+    }
     public void ResetTiles()
     {
         foreach (GameObject conn in Tiles.Values)
@@ -203,7 +213,7 @@ public class ChessPieceManager : NetworkBehaviour
     public void PositionSinglePiece(Chesspiece cp, ChessPieceConnection dp)
     {
         cp.SetNewCurrentPoints(dp.GridX.Value,dp.GridY.Value);
-        Vector3 pos = dp.pieceSetPoint.transform.position;
+        Vector3 pos = dp.pieceSpawnPoint.transform.position;
 
         cp.ReturnPositionServerRpc(pos);
     }
@@ -212,7 +222,7 @@ public class ChessPieceManager : NetworkBehaviour
     {
         ChessPieceConnection dp = GetChesspieceConnection(pd);
         cp.SetNewCurrentPoints(dp.GridX.Value, dp.GridY.Value);
-        Vector3 pos = dp.pieceSetPoint.transform.position;
+        Vector3 pos = dp.pieceSpawnPoint.transform.position;
 
         if (cp is Pawn)
         {

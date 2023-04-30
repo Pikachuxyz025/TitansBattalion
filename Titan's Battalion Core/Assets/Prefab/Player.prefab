@@ -15,6 +15,7 @@ GameObject:
   - component: {fileID: 7159557365058150070}
   - component: {fileID: 8137012238859020079}
   - component: {fileID: -1371665176457619308}
+  - component: {fileID: 5367835188208137520}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -50,9 +51,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cd7c119c9543610468f02f14981c172e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  grave:
-  - {fileID: 11400000, guid: 5cf782c50353d354d91a89fd3bbd1926, type: 2}
-  set: 01000000
+  chessboardSelection: []
+  gameModeSelection: 
 --- !u!114 &5360451695460521378
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -94,7 +94,6 @@ MonoBehaviour:
     m_InternalValue: 0
   NetworkIsKingInCheck:
     m_InternalValue: 0
-  currentKing: {fileID: 0}
   setCameraTransform:
   - {x: 4.5, y: 20, z: 1}
   - {x: 3, y: 20, z: 1}
@@ -113,7 +112,7 @@ MonoBehaviour:
     m_InternalValue: 0
   interaction: {fileID: -1371665176457619308}
   _playerUI: {fileID: 0}
-  playerTerritorySpawn: {fileID: 0}
+  playerTerritorySpawn: {fileID: 5367835188208137520}
 --- !u!114 &6443070331896006688
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -193,6 +192,31 @@ MonoBehaviour:
   availableMoves: []
   availableSpecialMoves: []
   unavailableMoves: []
+--- !u!114 &5367835188208137520
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9013614472923032471}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8dd8eecc37dcca3429201e68e86c4b8d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  chessboard: {fileID: 0}
+  piece: {fileID: 3471896705929466035, guid: 768718f4b168b6a45a1864a998f22655, type: 3}
+  armyEdgedPoints: []
+  armyEdgedobjects: []
+  spawnedObjects: []
+  connections: []
+  teamNumber:
+    m_InternalValue: 0
+  mainBoardOffsetX: 0
+  mainBoardOffsetY: 0
+  gameManager: {fileID: 0}
+  boardGenerator: {fileID: 0}
+  controllingPlayer: {fileID: 5360451695460521378}
 --- !u!1001 &2754877094326814587
 PrefabInstance:
   m_ObjectHideFlags: 0

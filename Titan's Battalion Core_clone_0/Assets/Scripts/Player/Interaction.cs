@@ -19,68 +19,90 @@ public class Interaction : NetworkBehaviour
     [SerializeField] private List<Points> availableSpecialMoves = new List<Points>();
     [SerializeField] private List<Points> unavailableMoves = new List<Points>();
 
-    private bool isMoving = false;
-    private bool setCurrentDrag = false;
+    const string TILE = "Tile", HOVER = "Hover", HIGHLIGHT = "Highlight", SPECIAL = "Special", UNAVAILABLE = "Unavailable";
 
+    [SerializeField] private NetworkVariable<bool> isDisabled = new NetworkVariable<bool>(false);
+
+    [ServerRpc(RequireOwnership = false)]
+    public void SetDisabledServerRpc(bool disabled) => this.isDisabled.Value = disabled;
+    
+    public bool GetLeftMouseClickDown()
+    {
+        if (this.isDisabled.Value) return false;
+        return Input.GetMouseButton(0);
+    }
+
+    private bool CurrentSetModeEquals(SetMode setMode)
+    {
+        return controllingPlayer.currentSetModeNet.Value==setMode;
+    }
+
+    public void OnMyTurnChanged(bool prieviousBool, bool currentBool)
+    {
+        if (CurrentSetModeEquals(SetMode.Set))
+            ResetCurrentHoverServerRpc();
+        SetDisabledServerRpc(!currentBool);
+    }
 
     public void SetCurrentCamera(Camera cam) => currentCamera = cam;
+
     public override void OnNetworkSpawn()
     {
         gameManager = GameManager.instance;
         pieceManager = ChessPieceManager.instance;
     }
 
-    [ServerRpc]
-    public void ResetCurrentHoverServerRpc()
-    {
-        if (pieceManager.IsCoordinateInList(currentHover))
-        {
-            pieceManager.SwapLayerServerRpc(currentHover.X, currentHover.Y, "Tile", OwnerClientId);
-            currentHover = new Points(1984987, 51684);
-        }
-    }
-
     // Update is called once per frame
-    void Update()
+    private void Update()
     {
         if (!IsOwner)
             return;
-        if (controllingPlayer.currentSetModeNet.Value == SetMode.Set && controllingPlayer.NetworkIsMyTurn.Value)
+
+        if (CurrentSetModeEquals(SetMode.Set))
+        {
+            if (!controllingPlayer.NetworkIsMyTurn.Value)
+                return;
             Interact();
-        else if (controllingPlayer.currentSetModeNet.Value == SetMode.Set && !controllingPlayer.NetworkIsMyTurn.Value)
-            ResetCurrentHoverServerRpc();
+        }
     }
 
-    #region Interact with board
-    private void Interact()
+    private bool ContainsVaildMove(ref List<Points> moves, Points pointPos)
     {
+        for (int i = 0; i < moves.Count; i++)
+            if (Points.DualEquals(moves[i], pointPos))
+                return true;
+        return false;
 
-        RaycastHit info;
-        Ray ray = currentCamera.ScreenPointToRay(Input.mousePosition);
-        if (Input.GetMouseButtonDown(0) && !isMoving)
-            SetCurrentDragBoolServerRpc(true);
-        else if (Input.GetMouseButtonUp(0))
-            SetCurrentDragBoolServerRpc(false);
+    }
 
-        if (Physics.Raycast(ray, out info, 100, LayerMask.GetMask("Tile", "Hover", "Highlight","Special")))
+    private void CurrentDrag(int x, int y)
+    {
+        Points newPosition = new Points(x, y);
+        if (pieceManager.GetChesspieceGameObject(newPosition) != null)
         {
-            ChessPieceConnection connectionContact = info.transform.gameObject.GetComponent<ChessPieceConnection>();
-
-            // Get the indexes of the tile i've hit
-            Points hitPosition = connectionContact.CurrentTilePoint();
-            SetCurrentHoverServerRpc(currentHover.X, currentHover.Y, hitPosition.X, hitPosition.Y);
+            Chesspiece conn = pieceManager.GetChesspieceConnection(newPosition).GetOccupiedPiece();
+            if (conn != null)
+            {
+                if (conn.OwnerClientId == OwnerClientId)
+                    currentlyDragging = conn;
+                if (currentlyDragging != null)
+                {
+                    availableMoves = currentlyDragging.GetAvailableMoves();
+                    availableSpecialMoves = currentlyDragging.GetSpecialMoves();
+                    if (controllingPlayer.isKingInCheck && !currentlyDragging.isKing)
+                    {
+                        Debug.Log(currentlyDragging.gameObject.name + " Isn't King");
+                        availableMoves = controllingPlayer.playerCheckableList.GetDownMyKing(availableMoves, controllingPlayer.currentKing.GetCurrentPosition(), currentlyDragging);
+                        availableSpecialMoves = controllingPlayer.playerCheckableList.GetDownMyKing(availableSpecialMoves, controllingPlayer.currentKing.GetCurrentPosition(), currentlyDragging);
+                    }
+                }
+                HighlightTilesServerRpc();
+            }
         }
-        else
-        {
-            OutsideBoardServerRpc();
-        }
-
-
-        DraggingServerRpc(ray);
     }
 
     [ServerRpc]
-    void DraggingServerRpc(Ray ray)
+    private void DraggingServerRpc(Ray ray)
     {
         if (currentlyDragging)
         {
@@ -90,129 +112,50 @@ public class Interaction : NetworkBehaviour
                 currentlyDragging.ReturnPositionServerRpc(ray.GetPoint(distance) + Vector3.up * dragOffset);
         }
     }
-    [ServerRpc]
-    void SetCurrentHoverServerRpc(int cX, int cY, int hX, int hY)
-    {
-        Points cHover = new Points(cX, cY);
-        Points hHover = new Points(hX, hY);
-
-
-        if (!pieceManager.IsCoordinateInList(currentHover))
-        {
-            currentHover = hHover;
-            pieceManager.SwapLayerServerRpc(currentHover.X, currentHover.Y, "Hover", OwnerClientId);
-        }
-
-        // If we were already hovering a tile, change the previous one
-        if (!Points.DualEquals(currentHover, hHover))
-        {
-            if (ContainsVaildMove(ref availableMoves, currentHover) || ContainsVaildMove(ref availableSpecialMoves, currentHover))
-                pieceManager.SwapLayerServerRpc(currentHover.X, currentHover.Y, "Highlight", OwnerClientId);
-            else
-                pieceManager.SwapLayerServerRpc(currentHover.X, currentHover.Y, "Tile", OwnerClientId);
-
-            currentHover = hHover;
-            pieceManager.SwapLayerServerRpc(hHover.X, hHover.Y, "Hover", OwnerClientId);
-
-        }
-        //if we press down on the mouse
-        if (setCurrentDrag)//Input.GetMouseButtonDown(0))
-        {
-            if (currentlyDragging == null)
-                CurrentDrag(hHover.X, hHover.Y);
-        }
-
-        //if we are releasing the mouse
-        if (currentlyDragging != null && !setCurrentDrag)//Input.GetMouseButtonUp(0))
-        {
-            ReleaseDrag(hHover.X, hHover.Y);
-        }
-    }
 
     [ServerRpc]
-    void SetCurrentDragBoolServerRpc(bool t)
+    private void HighlightTilesServerRpc()
     {
-        setCurrentDrag = t;
+        for (int i = 0; i < availableMoves.Count; i++)
+            pieceManager.SwapLayerServerRpc(availableMoves[i].X, availableMoves[i].Y, HIGHLIGHT, OwnerClientId);
+
+        for (int i = 0; i < availableSpecialMoves.Count; i++)
+            pieceManager.SwapLayerServerRpc(availableSpecialMoves[i].X, availableSpecialMoves[i].Y, SPECIAL, OwnerClientId);
+
+        //for (int i = 0; i < unavailableMoves.Count; i++)
+        //pieceManager.SwapLayerServerRpc(unavailableMoves[i].X, unavailableMoves[i].Y, "Unavailable", OwnerClientId);
     }
 
-    [ServerRpc]
-    void OutsideBoardServerRpc()
+    private void Interact()
     {
-        // that the current hover position and set the tag back to the original tag
-        if (pieceManager.IsCoordinateInList(currentHover))
+        RaycastHit info;
+        Ray ray = currentCamera.ScreenPointToRay(Input.mousePosition);
+
+        if (Physics.Raycast(ray, out info, 100, LayerMask.GetMask(TILE, HOVER, HIGHLIGHT, SPECIAL)))
         {
-            // whether that tag is highlight
-            if (ContainsVaildMove(ref availableMoves, currentHover) || ContainsVaildMove(ref availableSpecialMoves, currentHover))
-                pieceManager.SwapLayerServerRpc(currentHover.X, currentHover.Y, "Highlight", OwnerClientId);
-            else
-                pieceManager.SwapLayerServerRpc(currentHover.X, currentHover.Y, "Tile", OwnerClientId); // or the tag is Tile
-            // identify current hover out the range of the board
-            currentHover = new Points(1984987, 51684);
+            ChessPieceConnection connectionContact = info.transform.gameObject.GetComponent<ChessPieceConnection>();
+
+            // Get the indexes of the tile i've hit
+            Points hitPosition = connectionContact.CurrentTilePoint();
+            SetCurrentHoverServerRpc(hitPosition.X, hitPosition.Y,GetLeftMouseClickDown());
+        }
+        else
+        {
+            OutsideBoardServerRpc(GetLeftMouseClickDown());
         }
 
-        // If we aren't carrying the object anymore or if we let go of the object we're holding
-        if (currentlyDragging != null && !setCurrentDrag)
-        {
-            // the position the object was originally at
-            Points priorPosition = new Points(currentlyDragging.currentX, currentlyDragging.currentY);
-            // move the object back to that position
-            currentlyDragging.ReturnPositionServerRpc(pieceManager.GetNewPiecePosition(priorPosition));
-            currentlyDragging = null;
-            RemoveHighlightTilesServerRpc();
-        }
-    }
 
-
-
-    void ReleaseDrag(int x, int y)
-    {
-        Points newPosition = new Points(x, y);
-        Points priorPosition = new Points(currentlyDragging.currentX, currentlyDragging.currentY);
-        bool validMove = MoveTo(currentlyDragging, newPosition);
-        if (!validMove)
-            currentlyDragging.ReturnPositionServerRpc(pieceManager.GetNewPiecePosition(priorPosition));
-
-        currentlyDragging = null;
-        RemoveHighlightTilesServerRpc();
-        isMoving = false;
-    }
-
-    void CurrentDrag(int x, int y)
-    {
-        Points newPosition = new Points(x, y);
-        if (pieceManager.GetChesspieceGameObject(newPosition) != null)
-        {
-            Chesspiece conn = pieceManager.GetChesspieceConnection(newPosition).GetOccupiedPiece();
-            // Is it our turn
-            if (true && conn != null)
-            {
-                if (conn.OwnerClientId == OwnerClientId)
-                    currentlyDragging = conn;
-                if (currentlyDragging != null)
-                {
-                    // Get List of where I can go, highlight list as well
-                    availableMoves = currentlyDragging.GetAvailableMoves();
-                    // if (currentlyDragging.GetSpecialMoves().Count > 0)
-                    availableSpecialMoves = currentlyDragging.GetSpecialMoves();
-                    if (controllingPlayer.isKingInCheck && !currentlyDragging.isKing)
-                    {
-                        Debug.Log(currentlyDragging.gameObject.name+" Isn't King");
-                        availableMoves = controllingPlayer.playerCheckableList.GetDownMyKing(availableMoves);
-                        availableSpecialMoves = controllingPlayer.playerCheckableList.GetDownMyKing(availableSpecialMoves);
-                    }
-                }
-                HighlightTilesServerRpc();
-            }
-        }
+        DraggingServerRpc(ray);
     }
 
     private bool MoveTo(Chesspiece movingChesspiece, Points hitPosition)
     {
-        isMoving = true;
+        SetDisabledServerRpc(true);
         Points previousPosition = new Points(movingChesspiece.currentX, movingChesspiece.currentY);
 
         if (ContainsVaildMove(ref availableSpecialMoves, hitPosition))
         {
+
             Debug.Log("special move Set");
             switch (movingChesspiece.specialMove)
             {
@@ -321,7 +264,6 @@ public class Interaction : NetworkBehaviour
 
             Destroy(occupiedPiece.gameObject);
         }
-
         // Self Capture 
         // Might need an enum for types of piece
 
@@ -349,6 +291,115 @@ public class Interaction : NetworkBehaviour
         return true;
     }
 
+    [ServerRpc]
+    private void OutsideBoardServerRpc(bool isLeftMouseDwon)
+    {
+        // that the current hover position and set the tag back to the original tag
+        if (pieceManager.IsCoordinateInList(currentHover))
+        {
+            // whether that tag is highlight
+            if (ContainsVaildMove(ref availableMoves, currentHover) || ContainsVaildMove(ref availableSpecialMoves, currentHover))
+                pieceManager.SwapLayerServerRpc(currentHover.X, currentHover.Y, HIGHLIGHT, OwnerClientId);
+            else
+                pieceManager.SwapLayerServerRpc(currentHover.X, currentHover.Y, TILE, OwnerClientId); // or the tag is Tile
+            // identify current hover out the range of the board
+            currentHover = new Points(1984987, 51684);
+        }
+
+        // If we aren't carrying the object anymore or if we let go of the object we're holding
+        if (currentlyDragging != null && !isLeftMouseDwon)
+        {
+            // the position the object was originally at
+            Points priorPosition = new Points(currentlyDragging.currentX, currentlyDragging.currentY);
+            // move the object back to that position
+            currentlyDragging.ReturnPositionServerRpc(pieceManager.GetNewPiecePosition(priorPosition));
+            currentlyDragging = null;
+            RemoveHighlightTilesServerRpc();
+        }
+    }
+
+    private void ReleaseDrag(int x, int y)
+    {
+        Points newPosition = new Points(x, y);
+        Points priorPosition = new Points(currentlyDragging.currentX, currentlyDragging.currentY);
+        bool validMove = MoveTo(currentlyDragging, newPosition);
+        if (!validMove)
+            currentlyDragging.ReturnPositionServerRpc(pieceManager.GetNewPiecePosition(priorPosition));
+
+        currentlyDragging = null;
+        RemoveHighlightTilesServerRpc();
+        SetDisabledServerRpc(false);
+    }
+
+    [ServerRpc]
+    private void RemoveHighlightTilesServerRpc()
+    {
+        for (int i = 0; i < availableMoves.Count; i++)
+            pieceManager.SwapLayerServerRpc(availableMoves[i].X, availableMoves[i].Y, TILE, OwnerClientId);
+
+        for (int i = 0; i < availableSpecialMoves.Count; i++)
+            pieceManager.SwapLayerServerRpc(availableSpecialMoves[i].X, availableSpecialMoves[i].Y, TILE, OwnerClientId);
+
+        //for (int i = 0; i < unavailableMoves.Count; i++)
+        //pieceManager.SwapLayerServerRpc(unavailableMoves[i].X, unavailableMoves[i].Y, "Tile", OwnerClientId);
+
+        availableMoves.Clear();
+        availableSpecialMoves.Clear();
+        //unavailableMoves.Clear();
+    }
+
+    [ServerRpc(RequireOwnership = false)]
+    public void ResetCurrentHoverServerRpc()
+    {
+        if (pieceManager.IsCoordinateInList(currentHover))
+        {
+            pieceManager.SwapLayerServerRpc(currentHover.X, currentHover.Y, TILE, OwnerClientId);
+            currentHover = new Points(1984987, 51684);
+            if (currentlyDragging)
+            {
+                ReleaseDrag(1984987, 51684);
+            }
+        }
+    }
+
+    [ServerRpc]
+    private void SetCurrentHoverServerRpc(int x, int y, bool isLeftMouseDown)
+    {
+        Points hoverPoint = new Points(x, y);
+
+
+        if (!pieceManager.IsCoordinateInList(currentHover))
+        {
+            currentHover = hoverPoint;
+            pieceManager.SwapLayerServerRpc(currentHover.X, currentHover.Y, HOVER, OwnerClientId);
+        }
+
+        // If we were already hovering a tile, change the previous one
+        if (!Points.DualEquals(currentHover, hoverPoint))
+        {
+            if (ContainsVaildMove(ref availableMoves, currentHover) || ContainsVaildMove(ref availableSpecialMoves, currentHover))
+                pieceManager.SwapLayerServerRpc(currentHover.X, currentHover.Y, HIGHLIGHT, OwnerClientId);
+            else
+                pieceManager.SwapLayerServerRpc(currentHover.X, currentHover.Y, TILE, OwnerClientId);
+
+            currentHover = hoverPoint;
+            pieceManager.SwapLayerServerRpc(hoverPoint.X, hoverPoint.Y, HOVER, OwnerClientId);
+
+        }
+        //if we press down on the mouse
+        if (isLeftMouseDown)//Input.GetMouseButtonDown(0))
+        {
+            if (currentlyDragging == null)
+                CurrentDrag(hoverPoint.X, hoverPoint.Y);
+        }
+
+        //if we are releasing the mouse
+        if (currentlyDragging != null && !isLeftMouseDown)//Input.GetMouseButtonUp(0))
+        {
+            ReleaseDrag(hoverPoint.X, hoverPoint.Y);
+        }
+    }
+
     private void SetKingRook(ref Chesspiece kingChesspiece, Points hitPosition, Points previousPosition, ref Rook rook, Points newKingPosition, Points newRookPosition)
     {
         pieceManager.GetChesspieceConnection(hitPosition).SetOccupiedPiece(kingChesspiece);
@@ -362,46 +413,4 @@ public class Interaction : NetworkBehaviour
         pieceManager.PositionSinglePiece(rook, newKingPosition);
     }
 
-
-    [ServerRpc]
-    void HighlightTilesServerRpc()
-    {
-        for (int i = 0; i < availableMoves.Count; i++)
-            pieceManager.SwapLayerServerRpc(availableMoves[i].X, availableMoves[i].Y, "Highlight", OwnerClientId);
-
-        for (int i = 0; i < availableSpecialMoves.Count; i++)
-            pieceManager.SwapLayerServerRpc(availableSpecialMoves[i].X, availableSpecialMoves[i].Y, "Special", OwnerClientId);
-
-        //for (int i = 0; i < unavailableMoves.Count; i++)
-            //pieceManager.SwapLayerServerRpc(unavailableMoves[i].X, unavailableMoves[i].Y, "Unavailable", OwnerClientId);
-    }
-
-    [ServerRpc]
-    void RemoveHighlightTilesServerRpc()
-    {
-        for (int i = 0; i < availableMoves.Count; i++)
-            pieceManager.SwapLayerServerRpc(availableMoves[i].X, availableMoves[i].Y, "Tile", OwnerClientId);
-
-        for (int i = 0; i < availableSpecialMoves.Count; i++)
-            pieceManager.SwapLayerServerRpc(availableSpecialMoves[i].X, availableSpecialMoves[i].Y, "Tile", OwnerClientId);
-
-        //for (int i = 0; i < unavailableMoves.Count; i++)
-            //pieceManager.SwapLayerServerRpc(unavailableMoves[i].X, unavailableMoves[i].Y, "Tile", OwnerClientId);
-
-        availableMoves.Clear();
-        availableSpecialMoves.Clear();
-        //unavailableMoves.Clear();
-    }
-
-
-    private bool ContainsVaildMove(ref List<Points> moves, Points pointPos)
-    {
-        for (int i = 0; i < moves.Count; i++)
-            if (Points.DualEquals(moves[i], pointPos))
-                return true;
-        return false;
-
-    }
-
-    #endregion
 }

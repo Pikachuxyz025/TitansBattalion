@@ -2,19 +2,19 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class GameModeTerritory:MonoBehaviour
+public class GameModeTerritory : MonoBehaviour
 {
-    public ChessboardTemplate[] grave;
-    public GameMode[] set;
+    public ChessboardTemplate[] chessboardSelection;
+    public GameMode[] gameModeSelection;
 
     private Dictionary<GameMode, ChessboardTemplate> Territories()
     {
-        Dictionary<GameMode, ChessboardTemplate> check = new Dictionary<GameMode, ChessboardTemplate>();
-        for (int i = 0; i < set.Length; i++)
+        Dictionary<GameMode, ChessboardTemplate> territories = new Dictionary<GameMode, ChessboardTemplate>();
+        for (int i = 0; i < gameModeSelection.Length; i++)
         {
-            check.Add(set[i], grave[i]);
+            territories.Add(gameModeSelection[i], chessboardSelection[i]);
         }
-        return check;
+        return territories;
     }
 
     public ChessboardTemplate GetTerritory(GameMode mode)

@@ -84,10 +84,9 @@ public class GameManager : NetworkBehaviour
 
         Player chessGen = spawn.GetComponent<Player>();
         playerList.Add(chessGen);
-        chessGen.SetupVariables(DataSend.boardData, playerList.IndexOf(chessGen) + 1, chesGen);
+        chessGen.SetupVariables(DataSend.boardData, playerList.IndexOf(chessGen) + 1);
+        chessGen.GetPlayerTerritorySpawn().SetupVariables(playerList.IndexOf(chessGen) + 1, chesGen, this);
         spawn.NetworkObject.SpawnWithOwnership(playerId);
-       // SetClientRpc(spawn.NetworkObject,playerId);
-        Player.OnSetModeSet += StartGameServerRpc;
         playerCount++;
 
         if (playerCount > 1)        
@@ -124,7 +123,7 @@ public class GameManager : NetworkBehaviour
         if (!gameStarted.Value)
             return;
         chessPieceManager.SetTilesInCheck();
-        playerList[turnNumber].EnterTurnServerRpc();
+        //playerList[turnNumber].EnterTurnServerRpc();
     }
 
     public void CheckGameOver(Player chess)
@@ -204,7 +203,7 @@ public class GameManager : NetworkBehaviour
                 playerList[i] = null;
                 if (player != null)
                 {
-                    player.RemoveChessPieces();
+                    player.GetPlayerTerritorySpawn().RemoveChesspieces();
                     Destroy(player.gameObject);
                 }
             }
@@ -237,7 +236,6 @@ public class GameManager : NetworkBehaviour
             chessPieceManager.SetupTiles();
             chessPieceManager.SetTilesInCheck();
             gameStarted.Value = true;
-            Player.OnSetModeSet -= StartGameServerRpc;
         }
         else
             SetPlayerTurnServerRpc();

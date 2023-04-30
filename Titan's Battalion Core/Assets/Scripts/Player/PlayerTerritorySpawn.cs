@@ -8,64 +8,41 @@ using TMPro;
 
 public class PlayerTerritorySpawn : ChessGenerator, IMainBoardInfo
 {
-    [SerializeField] private Points[] armyEdgedPoints;
-    [SerializeField] private ChessPieceConnection[] armyEdgedobjects;
+    private Points[] armyEdgedPoints;
+    private ChessPieceConnection[] armyEdgedobjects;
 
-    [SerializeField] private List<GameObject> spawnedObjects = new List<GameObject>();
-    [SerializeField] private List<ChessPieceConnection> connections = new List<ChessPieceConnection>();
+     private List<GameObject> spawnedObjects = new List<GameObject>();
+    private List<ChessPieceConnection> connections = new List<ChessPieceConnection>();
 
     public NetworkVariable<int> teamNumber = new NetworkVariable<int>(0);
+
     [SerializeField] private int mainBoardOffsetX;
     [SerializeField] private int mainBoardOffsetY;
+
     [SerializeField] private GameManager gameManager;
     [SerializeField] private ChessboardGenerator boardGenerator;
-    [SerializeField]  private Player controllingPlayer;
-    public override void OnNetworkSpawn()
+    [SerializeField] private Player controllingPlayer;
+
+    #region Private/Protected
+    private void AssignRookToKing(King king)
     {
-        SetBoardGeneratorServerRpc();
-    }
-    private void Update()
-    {
-        if (!IsOwner)
-            return;
-        if (controllingPlayer.currentSetModeNet.Value == SetMode.Spawned && controllingPlayer.NetworkIsMyTurn.Value)
+        if (king == null) return;
+
+        controllingPlayer.SetCurrentKing(king);
+
+        foreach (GameObject _object in spawnedObjects)
         {
-            MoveChessboard();
-            if (Input.GetKeyDown(KeyCode.C))
+            if (_object.GetComponent<Chesspiece>() is Rook)
             {
-                SpawnAllPiecesServerRpc();
-                PositionAllPiecesServerRpc();
-                controllingPlayer.SetModeChangeServerRpc(SetMode.Set);
-                gameManager.StartGameServerRpc();
+                Rook rook = _object.GetComponent<Rook>();
+                king.rooks.Add(rook);
+                rook.SetKing(king);
             }
         }
     }
-    public void InsertMainBoardInfo(int x, int y)
-    {
-        mainBoardOffsetX = x;
-        mainBoardOffsetY = y;
-    }
-    [ServerRpc(RequireOwnership = false)] // Sets up event for changing mainboardOffset
-    public void SetBoardGeneratorServerRpc() => boardGenerator.ChangeValue += InsertMainBoardInfo;
-    public void CreatePieceList(ChessPieceConnection connection)
-    {
-        connections.Add(connection);
-    }
-    void MoveChessboard()
-    {
-        if (Input.GetKeyDown(KeyCode.A))
-        {
-            ControlAServerRpc();
-        }
-        if (Input.GetKeyDown(KeyCode.D))
-        {
-            ControlDServerRpc();
-        }
-    }
-
 
     [ServerRpc]
-    void ControlAServerRpc()
+    private void ControlAServerRpc()
     {
         //Adjust the X and Y of the coordinates
         switch (teamNumber.Value)
@@ -81,7 +58,6 @@ public class PlayerTerritorySpawn : ChessGenerator, IMainBoardInfo
                     {
                         // Change the alter grid movement for each player.
                         connection.AlterGrid(1, 0);
-                        //connection.AlterGridClientRpc(1, 0);
                     }
                 }
                 break;
@@ -96,7 +72,6 @@ public class PlayerTerritorySpawn : ChessGenerator, IMainBoardInfo
                     {
                         // Change the alter grid movement for each player.
                         connection.AlterGrid(-1, 0);
-                        //connection.AlterGridClientRpc(-1, 0);
                     }
                 }
                 break;
@@ -107,7 +82,6 @@ public class PlayerTerritorySpawn : ChessGenerator, IMainBoardInfo
                 {
                     // Change the alter grid movement for each player.
                     connection.AlterGrid(0, -1);
-                    //connection.AlterGridClientRpc(0, -1);
                 }
                 break;
             case 4:
@@ -117,14 +91,13 @@ public class PlayerTerritorySpawn : ChessGenerator, IMainBoardInfo
                 {
                     // Change the alter grid movement for each player.
                     connection.AlterGrid(0, 1);
-                    //connection.AlterGridClientRpc(0, 1);
                 }
                 break;
         }
     }
 
     [ServerRpc]
-    void ControlDServerRpc()
+    private void ControlDServerRpc()
     {
         // Adjust the X and Y of the coordinates
         switch (teamNumber.Value)
@@ -139,7 +112,6 @@ public class PlayerTerritorySpawn : ChessGenerator, IMainBoardInfo
                     {
                         // Change the alter grid movement for each player.
                         connection.AlterGrid(-1, 0);
-                        //connection.AlterGridClientRpc(-1, 0);
                     }
                 }
                 break;
@@ -153,7 +125,6 @@ public class PlayerTerritorySpawn : ChessGenerator, IMainBoardInfo
                     {
                         // Change the alter grid movement for each player.
                         connection.AlterGrid(1, 0);
-                        //.AlterGridClientRpc(1, 0);
                     }
                 }
                 break;
@@ -164,7 +135,7 @@ public class PlayerTerritorySpawn : ChessGenerator, IMainBoardInfo
                 {
                     // Change the alter grid movement for each player.
                     connection.AlterGrid(0, 1);
-                    //connection.AlterGridClientRpc(0, 1);
+
                 }
                 break;
             case 4:
@@ -174,12 +145,16 @@ public class PlayerTerritorySpawn : ChessGenerator, IMainBoardInfo
                 {
                     // Change the alter grid movement for each player.
                     connection.AlterGrid(0, -1);
-                    //connection.AlterGridClientRpc(0, -1);
                 }
                 break;
         }
     }
 
+    private void CreateTerritory()
+    {
+        GenerateAllTilesServerRpc(teamNumber.Value);
+        controllingPlayer.SetModeChangeServerRpc(SetMode.Spawned);
+    }
 
     protected override GameObject GenerateSingleTile(ref int x, ref int y)
     {
@@ -223,31 +198,20 @@ public class PlayerTerritorySpawn : ChessGenerator, IMainBoardInfo
         return tileObject;
     }
 
-    [ServerRpc]
-    public void SpawnAllPiecesServerRpc()
+    private void MoveChessboard()
     {
-        if (chessboard.prefabs.Count == 0) return;
-        for (int i = 0; i < chessboard.prefabs.Count; i++)
+        if (Input.GetKeyDown(KeyCode.A))
         {
-            GameObject setobject = SpawnSinglePiece(chessboard.prefabs[i]);
-            setobject.GetComponent<NetworkObject>().Spawn();
-
-            spawnedObjects.Add(setobject);
-
-            Chesspiece newChesspiece = setobject.GetComponent<Chesspiece>();
-            newChesspiece.SetupPiece(teamNumber.Value, controllingPlayer);
+            ControlAServerRpc();
+        }
+        if (Input.GetKeyDown(KeyCode.D))
+        {
+            ControlDServerRpc();
         }
     }
 
-    public GameObject SpawnSinglePiece(GameObject reference)
-    {
-        GameObject spawnedObject = Instantiate(reference);
-
-        return spawnedObject;
-    }
-
     [ServerRpc]
-    public void PositionAllPiecesServerRpc()
+    private void PositionAllPiecesServerRpc()
     {
         if (spawnedObjects.Count != chessboard.prefabs.Count)
             return;
@@ -268,7 +232,7 @@ public class PlayerTerritorySpawn : ChessGenerator, IMainBoardInfo
                 ChessPieceConnection boardPiece = setupTiles[setPoint].GetComponent<ChessPieceConnection>();
 
                 newChesspiece.SetGameMode(controllingPlayer.currentGameMode.Value);
-                Vector3 pos = boardPiece.pieceSetPoint.transform.position;
+                Vector3 pos = boardPiece.pieceSpawnPoint.transform.position;
                 newChesspiece.SetPositionServerRpc(boardPiece.GridX.Value, boardPiece.GridY.Value, pos, true);
                 newChesspiece.gameObject.GetComponent<NetworkObject>().ChangeOwnership(OwnerClientId);
                 boardPiece.SetOccupiedPiece(newChesspiece);
@@ -277,24 +241,83 @@ public class PlayerTerritorySpawn : ChessGenerator, IMainBoardInfo
 
         AssignRookToKing(king);
     }
+    [ServerRpc(RequireOwnership = false)] // Sets up event for changing mainboardOffset
+    private void SetBoardGeneratorServerRpc() => boardGenerator.ChangeValue += InsertMainBoardInfo;
 
-    public void AssignRookToKing(King king)
+    [ServerRpc]
+    private void SpawnAllPiecesServerRpc()
     {
-        if (king == null) return;
-
-        controllingPlayer.SetCurrentKing(king);
-
-        foreach (GameObject _object in spawnedObjects)
+        if (chessboard.prefabs.Count == 0) return;
+        for (int i = 0; i < chessboard.prefabs.Count; i++)
         {
-            if (_object.GetComponent<Chesspiece>() is Rook)
+            GameObject setobject = SpawnSinglePiece(chessboard.prefabs[i]);
+            setobject.GetComponent<NetworkObject>().Spawn();
+
+            spawnedObjects.Add(setobject);
+
+            Chesspiece newChesspiece = setobject.GetComponent<Chesspiece>();
+            newChesspiece.SetupPiece(teamNumber.Value, controllingPlayer);
+        }
+    }
+
+    private void SpawnPieces()
+    {
+        SpawnAllPiecesServerRpc();
+        PositionAllPiecesServerRpc();
+        controllingPlayer.SetModeChangeServerRpc(SetMode.Set);
+        gameManager.StartGameServerRpc();
+    }
+
+    private GameObject SpawnSinglePiece(GameObject reference)
+    {
+        GameObject spawnedObject = Instantiate(reference);
+
+        return spawnedObject;
+    }
+
+    private void Update()
+    {
+        if (!IsOwner)
+            return;
+        if (!controllingPlayer.NetworkIsMyTurn.Value)
+            return;
+        if (controllingPlayer.currentSetModeNet.Value == SetMode.Spawned) MoveChessboard();
+        if (Input.GetKeyDown(KeyCode.C))
+        {
+            switch (controllingPlayer.currentSetModeNet.Value)
             {
-                Rook rook = _object.GetComponent<Rook>();
-                king.rooks.Add(rook);
-                rook.SetKing(king);
+                case SetMode.NotSpawned:
+                    CreateTerritory();
+                    break;
+                case SetMode.Spawned:
+                    SpawnPieces();
+                    break;
             }
         }
     }
 
+    #endregion
+
+    #region Public
+    public void CreatePieceList(ChessPieceConnection connection) => connections.Add(connection);
+
+    public List<GameObject> GetSpawnedObjects()
+    {
+        return spawnedObjects;
+    }
+
+    public void InsertMainBoardInfo(int x, int y)
+    {
+        mainBoardOffsetX = x;
+        mainBoardOffsetY = y;
+    }
+
+    public override void OnNetworkSpawn()
+    {
+        SetBoardGeneratorServerRpc();
+        gameManager = GameManager.instance;
+        boardGenerator = ChessboardGenerator.Instance;
+    }
     public void RemoveChesspieces()
     {
         for (int i = 0; i < spawnedObjects.Count; i++)
@@ -312,4 +335,19 @@ public class PlayerTerritorySpawn : ChessGenerator, IMainBoardInfo
         }
     }
 
+    public void SetChessboardTemplate(ChessboardTemplate chessTemp)
+    {
+        chessboard = chessTemp;
+        armyEdgedPoints = chessboard.TileEdgedPoints;
+        armyEdgedobjects = new ChessPieceConnection[armyEdgedPoints.Length];
+    }
+    public void SetupVariables(int _teamNumber, ChessboardGenerator _chessGen, GameManager _gameManager)
+    {
+        teamNumber.Value = _teamNumber;
+        if (!boardGenerator)
+            boardGenerator = _chessGen;
+        if (!gameManager)
+            gameManager = _gameManager;
+    }
+    #endregion
 }

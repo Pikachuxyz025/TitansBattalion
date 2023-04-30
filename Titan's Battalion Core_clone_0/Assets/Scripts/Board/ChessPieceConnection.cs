@@ -9,17 +9,11 @@ public class ChessPieceConnection : NetworkBehaviour
 
     public NetworkVariable<int> GridX = new NetworkVariable<int>(-1), GridY = new NetworkVariable<int>(-1);
     public List<Chesspiece> piecesThatHaveUsInCheck = new List<Chesspiece>();
-    public bool isConnected = false;
-    public Pawn SkippedPawnd = null;
-    public GameObject pieceSetPoint;
+    public GameObject pieceSpawnPoint;
     public Chesspiece occupiedChesspiece;
     [SerializeField] private MeshFilter setupMesh;
     public NetworkVariable<int> spawnTerritoryId = new NetworkVariable<int>(0);
 
-    private void ChangeIsConnected(bool previousValue, bool newValue)
-    {
-        isConnected = newValue;
-    }
     public bool IsInCheck(int team)
     {
         bool b = false;
@@ -35,10 +29,6 @@ public class ChessPieceConnection : NetworkBehaviour
         }
         return b;
     }
-    public void ConfigureBoard()
-    {
-        isConnected = true;
-    }
 
     [ClientRpc]
     public void SwapLayersClientRpc(string layerName, ClientRpcParams rpc = default)
@@ -46,17 +36,11 @@ public class ChessPieceConnection : NetworkBehaviour
         gameObject.layer = LayerMask.NameToLayer(layerName);
     }
 
-    public Points GetChessboardPosition()
-    {
-        return new Points(GridX.Value, GridY.Value);
-    }
-
-
     [ClientRpc]
     public void GenerateCoordinatesClientRpc(int x, int y)
     {
         gameObject.name = string.Format("X:{0}, Y:{1}", x, y);
-        pieceSetPoint.transform.position = new Vector3(x + .5f, 0 + .1f, y + .5f);
+        pieceSpawnPoint.transform.position = new Vector3(x + .5f, 0 + .1f, y + .5f);
         GetComponent<BoxCollider>().center = new Vector3(x + .5f, 0, y + .5f);
 
         Mesh mesh = new Mesh();
@@ -64,18 +48,17 @@ public class ChessPieceConnection : NetworkBehaviour
         setupMesh.mesh = mesh;
         Vector3[] vertics = new Vector3[4];
 
-        vertics[0] = new Vector3(x * 1, 0, y * 1);
-        vertics[1] = new Vector3(x * 1, 0, (y + 1) * 1);
-        vertics[2] = new Vector3((x + 1) * 1, 0, y * 1);
-        vertics[3] = new Vector3((x + 1) * 1, 0, (y + 1) * 1);
+        vertics[0] = new Vector3(x, 0, y);
+        vertics[1] = new Vector3(x, 0, (y + 1));
+        vertics[2] = new Vector3((x + 1), 0, y);
+        vertics[3] = new Vector3((x + 1), 0, (y + 1));
 
-        int[] tris = new int[] { 0, 1, 2, 1, 3, 2 };
+        int[] triangles = new int[] { 0, 1, 2, 1, 3, 2 };
 
         mesh.vertices = vertics;
-        mesh.triangles = tris;
+        mesh.triangles = triangles;
 
         mesh.RecalculateNormals();
-        //ChessPieceManager.instance.AddPoints(x, y, gameObject);
     }
 
     public void ChangeGridValue(int x, int y, int id)
@@ -84,31 +67,6 @@ public class ChessPieceConnection : NetworkBehaviour
         GridY.Value = y;
         spawnTerritoryId.Value = id;
     }
-    public void GenerateCoordinates(int x, int y)
-    {
-        GridX.Value = x;
-        GridY.Value = y;
-        gameObject.name = string.Format("X:{0}, Y:{1}", x, y);
-        pieceSetPoint.transform.position = new Vector3(x + .5f, 0 + .1f, y + .5f);
-        GetComponent<BoxCollider>().center = new Vector3(x + .5f, 0, y + .5f);
-
-        Mesh mesh = new Mesh();
-
-        setupMesh.mesh = mesh;
-        Vector3[] vertics = new Vector3[4];
-
-        vertics[0] = new Vector3(x * 1, 0, y * 1);
-        vertics[1] = new Vector3(x * 1, 0, (y + 1) * 1);
-        vertics[2] = new Vector3((x + 1) * 1, 0, y * 1);
-        vertics[3] = new Vector3((x + 1) * 1, 0, (y + 1) * 1);
-
-        int[] tris = new int[] { 0, 1, 2, 1, 3, 2 };
-
-        mesh.vertices = vertics;
-        mesh.triangles = tris;
-
-        mesh.RecalculateNormals();
-    }
 
     public Points CurrentTilePoint()
     {
@@ -116,17 +74,6 @@ public class ChessPieceConnection : NetworkBehaviour
     }
 
     public Chesspiece GetOccupiedPiece() { return occupiedChesspiece; }
-
-
-    [ClientRpc]
-    public void SetOccupiedPieceClientRpc(NetworkObjectReference target)
-    {
-        if (target.TryGet(out NetworkObject targetObject))
-        {
-            Chesspiece cp = targetObject.gameObject.GetComponent<Chesspiece>();
-            occupiedChesspiece = cp;
-        }
-    }
 
     public void SetOccupiedPiece(Chesspiece cp) => occupiedChesspiece = cp;
 

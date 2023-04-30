@@ -137,7 +137,7 @@ public class Pawn : Chesspiece
         return result;
     }
 
-    private List<Points> BasicPointsSeptup(List<Points> setupPositions)
+    private List<Points> BasicPointsSetup(List<Points> setupPositions)
     {
         int x = 0;
         int y = 0;
@@ -176,7 +176,7 @@ public class Pawn : Chesspiece
 
     public Points GetEnPassantPosition()
     {
-        return enPassantPoint.GetChessboardPosition();
+        return enPassantPoint.CurrentTilePoint();
     }
 
     public bool IsEnPassantActive()
@@ -188,14 +188,14 @@ public class Pawn : Chesspiece
         if (currentConn.spawnTerritoryId.Value == team)
             return false;
 
-        Points c;
+        Points edgePoint;
 
         if (currentConn.spawnTerritoryId.Value > 0)
         {
-            c = new Points(currentX + addedPoints[currentConn.spawnTerritoryId.Value - 1].X, currentY + addedPoints[currentConn.spawnTerritoryId.Value - 1].Y);
-            if (!chessManager.IsCoordinateInList(c))
+            edgePoint = new Points(currentX + addedPoints[currentConn.spawnTerritoryId.Value - 1].X, currentY + addedPoints[currentConn.spawnTerritoryId.Value - 1].Y);
+            if (!chessManager.IsCoordinateInList(edgePoint))
             {
-                Debug.Log(currentConn.spawnTerritoryId.Value + ": " + c.X + ", " + c.Y);
+                Debug.Log(currentConn.spawnTerritoryId.Value + ": " + edgePoint.X + ", " + edgePoint.Y);
                 return true;
             }
         }
@@ -254,7 +254,7 @@ public class Pawn : Chesspiece
             List<Points> newMoves = new List<Points>();
             startingMoves = StartingPointsToAdd(firstMovePoints);
 
-            newMoves.AddRange(BasicPointsSeptup(firstMovePoints));
+            newMoves.AddRange(BasicPointsSetup(firstMovePoints));
             newMoves.AddRange(PointsToTakeover(takeoverPoints));
             return newMoves;
         }

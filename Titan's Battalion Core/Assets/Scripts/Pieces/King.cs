@@ -7,7 +7,7 @@ public class King : Chesspiece
     public List<Rook> rooks = new List<Rook>();
     public List<Chesspiece> targetingPieces = new List<Chesspiece>();
 
-    bool CastlingCheck(Points p)
+    bool IsCastlingPointInCheck(Points p)
     {
         return IsInCheck() || (chessManager.GetChesspieceConnection(p).IsInCheck(team));
     }
@@ -302,8 +302,6 @@ public class King : Chesspiece
                             break;
                         result.Add(specialPiece.CurrentTilePoint());
                         specialMove = SpecialMove.Castling;
-
-
                         break;
 
                     case KingDirection.Down:
@@ -320,6 +318,19 @@ public class King : Chesspiece
         return result;
     }
 
+
+    /// <summary>
+    /// ----------------ChessPieceConnection SpecialChesspiece----------------
+    /// The SpecialChesspiece method allows me to get the tile used for castling without using 
+    /// the same function over and over again in GetSpecialMoves.
+    /// Multiple local booleans and ints where created to account for the various directions the for loops 
+    /// go through to see if any of the tiles are occupied
+    /// </summary>
+    /// <param name="specialPointIndex"> This index is dependent on the list of specialPoints. </param>
+    /// <param name="XIsTrueYIsFalse"> Determines if currentX or currentY is used for calculation. </param>
+    /// <param name="currentRook"> The rook we're castling with</param>
+    /// <param name="kingOffset"> Determines if we're position or negative for increments. </param>
+    /// <returns> Should return a ChessPieceConnection if the route isn't covered and castlingPoint isn't in check. </returns>
     private ChessPieceConnection SpecialChesspiece(int specialPointIndex, bool XIsTrueYIsFalse, Rook currentRook, int kingOffset)
     {
         bool isRouteCovered = false;
@@ -328,7 +339,7 @@ public class King : Chesspiece
         Points moveablePosition = XIsTrueYIsFalse ? new Points(combinedOffset, currentY) : new Points(currentX, combinedOffset);
         int rookCurrentIntXY = XIsTrueYIsFalse ? currentRook.currentX : currentRook.currentY;
 
-        if (CastlingCheck(moveablePosition))
+        if (IsCastlingPointInCheck(moveablePosition))
             return null;
 
         // Make sure there's nothing in between us
@@ -345,7 +356,7 @@ public class King : Chesspiece
         if (isRouteCovered) return null;
 
         Points specialNewMove = new Points(currentX + specialPoints[specialPointIndex].X, currentY + specialPoints[specialPointIndex].Y);
-        if (CastlingCheck(specialNewMove))
+        if (IsCastlingPointInCheck(specialNewMove))
             return null;
         return chessManager.GetChesspieceConnection(specialNewMove);
     }

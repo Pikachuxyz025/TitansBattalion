@@ -8,8 +8,8 @@ public class ChessGenerator : NetworkBehaviour
     public ChessboardTemplate chessboard;
     [SerializeField] protected GameObject piece;
     public Dictionary<Points, GameObject> setupTiles = new Dictionary<Points, GameObject>(new Points.EqualityComparer());
-    public GameObject[,] tiles;
-    private GameObject show;
+
+
 
     [ServerRpc]
     protected void GenerateAllTilesServerRpc(int id)
@@ -29,60 +29,48 @@ public class ChessGenerator : NetworkBehaviour
                         if (points.SingleEquals(x, y))
                             isSkippable = true;
                     }
-                    //Debug.Log(isSkippable + ": " + x + ", " + y);
                     if (!isSkippable)
                     {
-                        GenerateTile(x, y,id);
+                        GenerateTile(x, y, id);
                     }
                 }
                 else
                 {
-                    GenerateTile(x, y,id);
+                    GenerateTile(x, y, id);
                 }
             }
         }
     }
 
-    void GenerateTile(int x, int y,int id)
+    private void GenerateTile(int x, int y, int id)
     {
         int xz = x;
         int yz = y;
-        show = GenerateSingleTile(ref xz, ref yz);
-        show.GetComponent<NetworkObject>().Spawn();
+        Transform thisObjectTransform = this.transform;
+        GameObject generatedChessTile = GenerateSingleTile(ref xz, ref yz);
+        generatedChessTile.GetComponent<NetworkObject>().Spawn();
 
         ChessPieceConnection connection = null;
-        if (show.GetComponent<ChessPieceConnection>() != null)
-            connection = show.GetComponent<ChessPieceConnection>();
+        if (generatedChessTile.GetComponent<ChessPieceConnection>() != null)
+            connection = generatedChessTile.GetComponent<ChessPieceConnection>();
 
-        show.transform.parent = transform;
+        generatedChessTile.transform.parent = thisObjectTransform;
 
-        connection.ChangeGridValue(xz, yz,id);
+        connection.ChangeGridValue(xz, yz, id);
         connection.GenerateCoordinatesClientRpc(xz, yz);
-        ChessPieceManager.instance.AddPoints(xz, yz, show);
-        if (transform.GetComponent<IMainBoardInfo>() != null)
-            transform.GetComponent<IMainBoardInfo>().CreatePieceList(connection);
+        ChessPieceManager.instance.AddPoints(xz, yz, generatedChessTile);
+        if (thisObjectTransform.GetComponent<IMainBoardInfo>() != null)
+            thisObjectTransform.GetComponent<IMainBoardInfo>().CreatePieceList(connection);
     }
 
-    
+
 
     public void SetChessboard(ChessboardTemplate newChess) => chessboard = newChess;
 
-    protected virtual GameObject GenerateSingleTile( ref int x, ref int y)
+    protected virtual GameObject GenerateSingleTile(ref int x, ref int y)
     {
-        int x_R = 0;
-        int y_R = 0;
         GameObject tileObject = new GameObject(string.Format("X:{0}, Y:{1}", x, y));
 
         return tileObject;
-    }
-
-
-    public Points LookupTileIndex(GameObject hitInfo)
-    {
-        for (int x = 0; x < chessboard.tileCountX; x++)
-            for (int y = 0; y < chessboard.tileCountY; y++)
-                if (tiles[x, y] == hitInfo)
-                    return new Points(x, y);
-        return new Points(-1, -1);
     }
 }

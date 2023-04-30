@@ -115,12 +115,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c0c026d6547a47a4092c5a1de722bc9c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  GridX: -1
-  GridY: -1
-  isConnected: 0
-  pieceSetPoint: {fileID: 8304669893800771414}
+  GridX:
+    m_InternalValue: -1
+  GridY:
+    m_InternalValue: -1
+  piecesThatHaveUsInCheck: []
+  pieceSpawnPoint: {fileID: 8304669893800771414}
   occupiedChesspiece: {fileID: 0}
   setupMesh: {fileID: 6975213580490005719}
+  spawnTerritoryId:
+    m_InternalValue: 0
 --- !u!65 &648324714955736204
 BoxCollider:
   m_ObjectHideFlags: 0

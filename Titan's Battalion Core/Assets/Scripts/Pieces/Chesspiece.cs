@@ -225,81 +225,15 @@ public class Chesspiece : NetworkBehaviour
                 {
                     AddInCheck(NextPoint(1, 1));
                     newMoves.AddRange(NextPoint(1, 1));
-                    /*for (int x = currentX + 1, y = currentY + 1; x > currentX && y > currentY; x++, y++)
-                    {
-                        Points p = new Points(x, y);
-                        if (!chessManager.IsCoordinateInList(p))
-                            break;
-                        if (chessManager.IsOccupied(p))
-                        {
-                            if (chessManager.GetOccupiedPiece(p).team != team)
-                            {
-                                AddInCheck(p);
-                                newMoves.Add(p);
-                            }
-                            break;
-                        }
-                        AddInCheck(p);
-                        newMoves.Add(p);
-                    }*/
+ 
                     AddInCheck(NextPoint(-1, 1));
                     newMoves.AddRange(NextPoint(-1, 1));
-                    /*for (int x = currentX - 1, y = currentY + 1; x < currentX && y > currentY; x--, y++)
-                    {
-                        Points p = new Points(x, y);
-                        if (!chessManager.IsCoordinateInList(p))
-                            break;
-                        if (chessManager.IsOccupied(p))
-                        {
-                            if (chessManager.GetOccupiedPiece(p).team != team)
-                            {
-                                AddInCheck(p);
-                                newMoves.Add(p);
-                            }
-                            break;
-                        }
-                        AddInCheck(p);
-                        newMoves.Add(p);
-                    }*/
+
                     AddInCheck(NextPoint(-1, -1));
                     newMoves.AddRange(NextPoint(-1, -1));
-                    /*for (int x = currentX - 1, y = currentY - 1; x < currentX && y < currentY; x--, y--)
-                    {
-                        Points p = new Points(x, y);
-                        if (!chessManager.IsCoordinateInList(p))
-                            break;
-                        if (chessManager.IsOccupied(p))
-                        {
-                            if (chessManager.GetOccupiedPiece(p).team != team)
-                            {
-                                AddInCheck(p);
-                                newMoves.Add(p);
-                            }
-                            break;
-                        }
-                        AddInCheck(p);
-                        newMoves.Add(p);
-                    }*/
+
                     AddInCheck(NextPoint(1, -1));
                     newMoves.AddRange(NextPoint(1, -1));
-                    /*for (int x = currentX + 1, y = currentY - 1; x > currentX && y < currentY; x++, y--)
-                    {
-                        Points p = new Points(x, y);
-                        if (!chessManager.IsCoordinateInList(p))
-                            break;
-                        if (chessManager.IsOccupied(p))
-                        {
-                            if (chessManager.GetOccupiedPiece(p).team != team)
-                            {
-                                AddInCheck(p);
-                                newMoves.Add(p);
-                            }
-                            break;
-                        }
-                        AddInCheck(p);
-                        newMoves.Add(p);
-
-                    }*/
                 }
                 break;
         }
@@ -333,7 +267,7 @@ public class Chesspiece : NetworkBehaviour
     {
         List<Points> resultingPoints = new List<Points>();
         int combinedOffsetX = currentX + pointOffsetX;
-        int combinedOffsetY = currentY + pointOffsetX;
+        int combinedOffsetY = currentY + pointOffsetY;
         bool isXPositiveOrNegative = pointOffsetX > 0 ? true : false;
         bool isYPositiveOrNegative = pointOffsetY > 0 ? true : false;
         for (int x = combinedOffsetX, y = combinedOffsetY; isXPositiveOrNegative ? x > currentX : x < currentX && isYPositiveOrNegative ? y > currentY : y < currentY; x += pointOffsetX, y += pointOffsetY)
@@ -341,6 +275,7 @@ public class Chesspiece : NetworkBehaviour
             Points nextPoint = new Points(x, y);
             if (!chessManager.IsCoordinateInList(nextPoint))
                 break;
+            
 
             if (chessManager.IsOccupied(nextPoint))
             {
@@ -352,6 +287,7 @@ public class Chesspiece : NetworkBehaviour
         }
         return resultingPoints;
     }
+
     public virtual void SetScale(Vector3 scale, bool force = false)
     {
         desiredScale = scale;
