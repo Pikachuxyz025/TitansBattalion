@@ -277,11 +277,10 @@ public class PlayerTerritorySpawn : ChessGenerator, IMainBoardInfo
 
     private void Update()
     {
-        if (!IsOwner)
+        if (!IsOwner||!controllingPlayer.NetworkIsMyTurn.Value)
             return;
-        if (!controllingPlayer.NetworkIsMyTurn.Value)
-            return;
-        if (controllingPlayer.currentSetModeNet.Value == SetMode.Spawned) MoveChessboard();
+        if (controllingPlayer.currentSetModeNet.Value == SetMode.Spawned)
+            MoveChessboard();
         if (Input.GetKeyDown(KeyCode.C))
         {
             switch (controllingPlayer.currentSetModeNet.Value)
