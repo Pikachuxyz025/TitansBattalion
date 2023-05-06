@@ -10,10 +10,10 @@ GameObject:
   m_Component:
   - component: {fileID: 3746741280344097781}
   - component: {fileID: 3746741280344097782}
-  - component: {fileID: 3746741280344097776}
   - component: {fileID: 3746741280344097783}
   - component: {fileID: 2722820221501845953}
   - component: {fileID: 5545534553349427599}
+  - component: {fileID: 6557681886222122970}
   m_Layer: 0
   m_Name: GameManager
   m_TagString: Untagged
@@ -48,30 +48,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 437bbc0acdbac5243bee147d8c0e1a66, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  chessPieceManager: {fileID: 3746741280344097776}
+  chessPieceManager: {fileID: 6557681886222122970}
   chesGen: {fileID: 3746741280344097783}
   chessboardManager: {fileID: 0}
   uiManager: {fileID: 0}
   playerList: []
   playerActiveList: []
   mainBoardId: 0
+  gameStarted:
+    m_InternalValue: 0
   playerPrefab: {fileID: 5360451695460521378, guid: 0fd41045516b135469e29a1aca06b5f9, type: 3}
   dataSend: {fileID: 0}
   currentState: 0
---- !u!114 &3746741280344097776
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3746741280344097780}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 41604e5b73e6c7543ad2812ad24e9a1b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  PointList: []
-  activeChesspieces: []
 --- !u!114 &3746741280344097783
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -86,10 +74,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   chessboard: {fileID: 0}
   piece: {fileID: 3471896705929466035, guid: 768718f4b168b6a45a1864a998f22655, type: 3}
-  pieceManager: {fileID: 3746741280344097776}
-  mainBoardList:
-  - {fileID: 11400000, guid: f22fb077a3a51e94b83ce0134c6a77ea, type: 2}
-  - {fileID: 11400000, guid: b318dee79639d2d4a940e862e344a4e4, type: 2}
   battlefield: {fileID: 2722820221501845953}
 --- !u!114 &2722820221501845953
 MonoBehaviour:
@@ -124,3 +108,18 @@ MonoBehaviour:
   AlwaysReplicateAsRoot: 0
   DontDestroyWithOwner: 0
   AutoObjectParentSync: 1
+--- !u!114 &6557681886222122970
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3746741280344097780}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6880414247fc4614e82a4dd0619436a7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  PointList: []
+  ObjectList: []
+  activeChesspieces: []

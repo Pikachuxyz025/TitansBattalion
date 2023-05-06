@@ -27,8 +27,6 @@ public class GameManager : NetworkBehaviour
 
     [SerializeField] private ChessboardTileManager chessPieceManager;
     [SerializeField] private CentralBoardGenerator chesGen;
-    [SerializeField] private ChessboardManager chessboardManager;
-    [SerializeField] public GameUIManager uiManager;
 
     public List<Player> playerList = new List<Player>();
     [SerializeField] private List<Player> playerActiveList = new List<Player>();
