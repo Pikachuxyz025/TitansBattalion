@@ -1,0 +1,7 @@
+{
+  "name": "com.titansbattalion.TB_CodeReview",
+  "version": "1.0.0",
+  "displayName": "Code for In-Match Gameplay",
+  "description": "A setup of all code involve with the in-match gameplay. Currently hoping for a review for the 'Player' script and anythign that ties to it.'",
+  //"unity": 
+}
